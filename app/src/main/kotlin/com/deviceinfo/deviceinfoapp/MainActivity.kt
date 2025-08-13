@@ -1,120 +1,52 @@
-package com.deviceinfo.deviceinfoapp.utils
+package com.deviceinfo.deviceinfoapp
 
-import android.app.ActivityManager
-import android.content.Context
-import android.os.Build
-import android.os.Environment
-import android.os.StatFs
-import android.util.DisplayMetrics
-import android.view.WindowManager
-import java.io.File
-import java.io.IOException
-import java.text.DecimalFormat
-import kotlin.math.log10
-import kotlin.math.pow
+import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
+import com.deviceinfo.deviceinfoapp.model.DeviceInfo
+import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper
 
-class DeviceInfoHelper(private val context: Context) {
+class MainActivity : AppCompatActivity() {
 
-    private fun getMemoryInfo(): ActivityManager.MemoryInfo {
-        val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        return ActivityManager.MemoryInfo().also { actManager.getMemoryInfo(it) }
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-    fun getTotalRam(): String {
-        return formatSize(getMemoryInfo().totalMem)
-    }
+        val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(this)
 
-    fun getAvailableRam(): String {
-        return formatSize(getMemoryInfo().availMem)
-    }
+        val deviceInfoHelper = DeviceInfoHelper(this)
+        val deviceInfoList = mutableListOf<DeviceInfo>()
 
-    fun getUsedRam(): String {
-        val memInfo = getMemoryInfo()
-        val usedMem = memInfo.totalMem - memInfo.availMem
-        return formatSize(usedMem)
-    }
+        // --- RAM Section ---
+        deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
+        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
+        deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
 
-    fun getDeviceModel(): String = Build.MODEL
+        // --- Storage Section ---
+        deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
+        deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
+        deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
 
-    fun getManufacturer(): String = Build.MANUFACTURER
+        // --- Device Section ---
+        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
+        deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
 
-    fun getAndroidVersion(): String = Build.VERSION.RELEASE
-
-    fun getSDKVersion(): String = Build.VERSION.SDK_INT.toString()
-
-    fun getCpuInfo(): String {
-        return try {
-            val file = File("/proc/cpuinfo")
-            val text = file.readText()
-            val modelNameLine = text.lines().find { it.startsWith("model name") }
-            val hardwareLine = text.lines().find { it.startsWith("Hardware") }
-            modelNameLine?.substringAfter(":")?.trim() ?: hardwareLine?.substringAfter(":")?.trim() ?: "N/A"
-        } catch (e: IOException) {
-            e.printStackTrace()
-            "N/A"
-        }
-    }
-
-    fun getScreenResolution(): String {
-        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val metrics = windowManager.currentWindowMetrics
-            val width = metrics.bounds.width()
-            val height = metrics.bounds.height()
-            return "${height} x ${width}"
-        } else {
-            @Suppress("DEPRECATION")
-            val display = windowManager.defaultDisplay
-            @Suppress("DEPRECATION")
-            val metrics = DisplayMetrics()
-            @Suppress("DEPRECATION")
-            display.getMetrics(metrics)
-            return "${metrics.heightPixels} x ${metrics.widthPixels}"
-        }
-    }
-
-    fun getScreenDensity(): String {
-        val metrics = context.resources.displayMetrics
-        return "${metrics.densityDpi} dpi"
-    }
-    
-    // --- NEW HELPER FOR STORAGE ---
-    private fun getInternalStorageStatFs(): StatFs {
-        val path = Environment.getDataDirectory()
-        return StatFs(path.path)
-    }
-
-    fun getTotalInternalStorage(): String {
-        val stat = getInternalStorageStatFs()
-        val totalBytes = stat.blockCountLong * stat.blockSizeLong
-        return formatSize(totalBytes)
-    }
-
-    fun getAvailableInternalStorage(): String {
-        val stat = getInternalStorageStatFs()
-        val availableBytes = stat.availableBlocksLong * stat.blockSizeLong
-        return formatSize(availableBytes)
-    }
-
-    /**
-     * NEW: Calculates the internal storage usage percentage.
-     */
-    fun getInternalStorageUsagePercentage(): String {
-        val stat = getInternalStorageStatFs()
-        val totalBytes = stat.blockCountLong * stat.blockSizeLong
-        val availableBytes = stat.availableBlocksLong * stat.blockSizeLong
-        val usedBytes = totalBytes - availableBytes
+        // --- OS Section ---
+        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
+        deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
         
-        if (totalBytes <= 0) return "0%"
-        
-        val percentage = (usedBytes * 100.0 / totalBytes).toInt()
-        return "$percentage%"
-    }
+        // --- CPU Section ---
+        deviceInfoList.add(DeviceInfo("CPU Info", deviceInfoHelper.getCpuInfo()))
 
-    private fun formatSize(size: Long): String {
-        if (size <= 0) return "0"
-        val units = arrayOf("B", "KB", "MB", "GB", "TB")
-        val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
-        return DecimalFormat("#,##0.#").format(size / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
+        // --- Display Section ---
+        deviceInfoList.add(DeviceInfo("Screen Resolution", deviceInfoHelper.getScreenResolution()))
+        deviceInfoList.add(DeviceInfo("Screen Density", deviceInfoHelper.getScreenDensity()))
+
+
+        val adapter = DeviceInfoAdapter(deviceInfoList)
+        recyclerView.adapter = adapter
     }
 }
