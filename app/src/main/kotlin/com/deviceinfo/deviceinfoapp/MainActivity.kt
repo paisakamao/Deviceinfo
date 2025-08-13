@@ -18,7 +18,6 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
@@ -28,43 +27,30 @@ class MainActivity : AppCompatActivity() {
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // --- RAM Section ---
+        // Populate the full summary list
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
         deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
-
-        // --- Storage Section ---
         deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
         deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        
-        // --- Battery Section ---
         deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
         deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
         deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
-
-        // --- CPU Section ---
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
-
-        // --- Display Section ---
         deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Screen Density", displayInfoHelper.getScreenDensity()))
         deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
-
-        // --- Device & OS Section ---
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
         deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
         deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
         deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
-
-        // --- Clickable Summary Items ---
         deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
         deviceInfoList.add(DeviceInfo("User Installed Apps", appInfoHelper.getUserAppCount()))
         
         val adapter = DeviceInfoAdapter(deviceInfoList)
         
-        // --- Set up the click listener ---
         adapter.onItemClick = { deviceInfo ->
             when (deviceInfo.label) {
                 "Total Sensors" -> {
@@ -72,7 +58,6 @@ class MainActivity : AppCompatActivity() {
                     startActivity(intent)
                 }
                 "User Installed Apps" -> {
-                    // This will be ready for when we create the AppListActivity
                     val intent = Intent(this, AppListActivity::class.java)
                     startActivity(intent)
                 }
