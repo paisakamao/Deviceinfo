@@ -55,23 +55,7 @@ class DeviceInfoHelper(private val context: Context) {
         }
     }
 
-    fun getScreenResolution(): String {
-        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val metrics = windowManager.currentWindowMetrics
-            val width = metrics.bounds.width()
-            val height = metrics.bounds.height()
-            return "${height} x ${width}"
-        } else {
-            @Suppress("DEPRECATION")
-            val display = windowManager.defaultDisplay
-            @Suppress("DEPRECATION")
-            val metrics = DisplayMetrics()
-            @Suppress("DEPRECATION")
-            display.getMetrics(metrics)
-            return "${metrics.heightPixels} x ${metrics.widthPixels}"
-        }
-    }
+
 
     fun getScreenDensity(): String {
         val metrics = context.resources.displayMetrics
