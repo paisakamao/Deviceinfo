@@ -4,9 +4,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
-import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-import com.deviceinfo.deviceinfoapp.utils.* // Use a wildcard import to keep it clean
+import com.deviceinfo.deviceinfoapp.adapter.SensorListAdapter
+import com.deviceinfo.deviceinfoapp.utils.SensorInfoHelper
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,49 +16,14 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our helpers
-        val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this)
-        val cpuInfoHelper = CpuInfoHelper()
-        val displayInfoHelper = DisplayInfoHelper(this)
-        val sensorInfoHelper = SensorInfoHelper(this) // New helper instance
-        
-        val deviceInfoList = mutableListOf<DeviceInfo>()
+        // 1. Create the helper
+        val sensorInfoHelper = SensorInfoHelper(this)
 
-        // --- RAM Section ---
-        deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
-        deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
+        // 2. Get the detailed list of sensors
+        val sensorList = sensorInfoHelper.getSensorDetailsList()
 
-        // --- Storage Section ---
-        deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
-        deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
-        deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        
-        // --- Battery Section ---
-        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
-        deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
-
-        // --- CPU Section ---
-        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
-        deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
-
-        // --- Display Section ---
-        deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
-        deviceInfoList.add(DeviceInfo("Screen Density", displayInfoHelper.getScreenDensity()))
-        deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
-        
-        // --- Sensors Section ---
-        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorCount()))
-
-        // --- Device & OS Section ---
-        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
-        deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
-        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
-        deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
-        
-        val adapter = DeviceInfoAdapter(deviceInfoList)
+        // 3. Create and set the new SensorListAdapter
+        val adapter = SensorListAdapter(sensorList)
         recyclerView.adapter = adapter
     }
 }
