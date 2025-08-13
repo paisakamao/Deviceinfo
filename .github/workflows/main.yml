@@ -37,10 +37,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. Run the build to make sure the app compiles successfully
+# 4. Run the build to make sure the app compiles successfully
       - name: Build with Gradle
-        run: ./gradlew build
+        run: bash ./gradlew build
 
+      # 5. Run unit tests
+      - name: Run unit tests
+        run: bash ./gradlew test
       # 5. Run unit tests
       - name: Run unit tests
         run: ./gradlew test
