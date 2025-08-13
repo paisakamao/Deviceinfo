@@ -4,12 +4,13 @@ plugins {
 }
 
 android {
+    // THIS LINE FIXES THE WARNING
     namespace 'com.deviceinfo.deviceinfoapp'
-    compileSdk 33 // You can update this to the latest stable version
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.deviceinfo.deviceinfoapp"
-        minSdk 24 // Android 7.0 (Nougat)
+        minSdk 24
         targetSdk 33
         versionCode 1
         versionName "1.0"
@@ -30,11 +31,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-    // Enable View Binding (optional, but a modern way to access views)
-    // If you use this, you would change your MainActivity slightly.
-    // buildFeatures {
-    //     viewBinding true
-    // }
 }
 
 dependencies {
