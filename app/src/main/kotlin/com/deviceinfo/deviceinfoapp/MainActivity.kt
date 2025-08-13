@@ -23,8 +23,8 @@ class MainActivity : AppCompatActivity() {
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
+        val appInfoHelper = AppInfoHelper(this) // New helper instance
         
-        // Create a master list that can hold ANY type of data
         val masterList = mutableListOf<Any>()
 
         // --- Add all the general device info ---
@@ -33,23 +33,22 @@ class MainActivity : AppCompatActivity() {
         masterList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
         masterList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
         masterList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
-        masterList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
+        masterList.add(DeviceInfo("Internal Storage Used", deviceInfoInfoHelper.getInternalStorageUsagePercentage()))
         masterList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
         masterList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         masterList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
-        masterList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         masterList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
+        masterList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorCount()))
+        masterList.add(DeviceInfo("User Installed Apps", appInfoHelper.getUserAppCount())) // New info line
         masterList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
 
         // --- Add a header for the sensors section ---
-        // We can reuse the DeviceInfo model for a simple title
         masterList.add(DeviceInfo("--- ALL SENSORS ---", "")) 
 
         // --- Add all the detailed sensor info ---
         val sensorList = sensorInfoHelper.getSensorDetailsList()
         masterList.addAll(sensorList)
 
-        // Create and set our new MasterAdapter
         val adapter = MasterAdapter(masterList)
         recyclerView.adapter = adapter
     }
