@@ -1,9 +1,6 @@
 # Set default behavior, in case users don't have core.autocrlf set.
 * text=auto
 
-#
-# The above will handle all files NOT found below
-#
 # These files are text and should be normalized (Convert CRLF to LF)
 *.md text
 .gitignore text
