@@ -33,5 +33,24 @@
             android:layout_height="wrap_content"
             android:textSize="14sp"
             tools:text="com.deviceinfo.deviceinfoapp" />
+
+        <!-- NEW TEXTVIEW FOR VERSION AND SIZE -->
+        <TextView
+            android:id="@+id/appVersionAndSizeTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textSize="12sp"
+            tools:text="Version: 1.0 | Size: 15.2 MB" />
+
+        <!-- NEW TEXTVIEW FOR INSTALLER SOURCE -->
+        <TextView
+            android:id="@+id/appSourceTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            tools:text="Source: Google Play Store" />
+
     </LinearLayout>
+
 </LinearLayout>
