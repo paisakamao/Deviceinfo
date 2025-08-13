@@ -61,14 +61,26 @@ class DeviceInfoHelper(private val context: Context) {
     }
 
     /**
-     * Gets the screen resolution in pixels. This is the modern, non-deprecated way.
+     * Gets the screen resolution in pixels. This is now safe for all API levels.
      */
     fun getScreenResolution(): String {
         val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val metrics = windowManager.currentWindowMetrics
-        val width = metrics.bounds.width()
-        val height = metrics.bounds.height()
-        return "${height} x ${width}"
+        // Check if the device is Android 11 (API 30) or higher
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val metrics = windowManager.currentWindowMetrics
+            val width = metrics.bounds.width()
+            val height = metrics.bounds.height()
+            return "${height} x ${width}"
+        } else {
+            // Use the older, deprecated method for older devices
+            @Suppress("DEPRECATION")
+            val display = windowManager.defaultDisplay
+            @Suppress("DEPRECATION")
+            val metrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            display.getMetrics(metrics)
+            return "${metrics.heightPixels} x ${metrics.widthPixels}"
+        }
     }
 
     /**
