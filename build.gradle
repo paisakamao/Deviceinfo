@@ -1,0 +1,20 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+// For modern Android projects (Android Gradle Plugin 7.0+), this file is often
+// used just to declare the plugins and their versions for the entire project.
+// The actual application of these plugins happens in the module-level build.gradle files.
+
+plugins {
+    // The plugin for building Android applications.
+    id 'com.android.application' version '7.4.2' apply false
+
+    // The plugin for building Android libraries (if you had a library module).
+    id 'com.android.library' version '7.4.2' apply false
+
+    // The plugin for compiling Kotlin code for Android.
+    id 'org.jetbrains.kotlin.android' version '1.8.0' apply false
+}
+
+// In older projects, you might also see a 'buildscript' block and 'allprojects' block
+// here for repository configuration, but that has been moved to settings.gradle in
+// modern projects for better performance and clarity.
