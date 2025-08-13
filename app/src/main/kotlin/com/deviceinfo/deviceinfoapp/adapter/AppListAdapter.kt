@@ -16,6 +16,9 @@ class AppListAdapter(private val appList: List<AppInfo>) :
         val iconImageView: ImageView = view.findViewById(R.id.appIconImageView)
         val nameTextView: TextView = view.findViewById(R.id.appNameTextView)
         val packageTextView: TextView = view.findViewById(R.id.appPackageTextView)
+        // Find the new TextViews
+        val versionAndSizeTextView: TextView = view.findViewById(R.id.appVersionAndSizeTextView)
+        val sourceTextView: TextView = view.findViewById(R.id.appSourceTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -29,6 +32,9 @@ class AppListAdapter(private val appList: List<AppInfo>) :
         holder.iconImageView.setImageDrawable(appInfo.icon)
         holder.nameTextView.text = appInfo.appName
         holder.packageTextView.text = appInfo.packageName
+        // Set the text for the new TextViews
+        holder.versionAndSizeTextView.text = "Version: ${appInfo.versionName} | Size: ${appInfo.appSize}"
+        holder.sourceTextView.text = "Source: ${appInfo.installerSource}"
     }
 
     override fun getItemCount() = appList.size
