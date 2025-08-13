@@ -18,39 +18,49 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
         val appInfoHelper = AppInfoHelper(this)
+        val systemInfoHelper = SystemInfoHelper() // New helper instance
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // Populate the full summary list
+        // --- RAM Section ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
-        deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
-        deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
-        deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
+        
+        // --- Storage Section ---
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
+        
+        // --- Battery Section ---
         deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
+        deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
+        
+        // --- CPU Section ---
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
-        deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
+        
+        // --- Display Section ---
+        deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
-        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
-        
-        // --- THIS SECTION IS NOW CORRECTED ---
-        // Get the app counts for display
-        val userAppCount = appInfoHelper.getUserAppsDetails().size
-        val systemAppCount = appInfoHelper.getSystemAppsDetails().size
-        val totalAppCount = userAppCount + systemAppCount
-        
-        // Add the clickable summary items
-        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
-        // Display the total count, matching the reference app
-        deviceInfoList.add(DeviceInfo("All Apps", totalAppCount.toString()))
 
+        // --- System Section ---
+        deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
+        deviceInfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
+        deviceInfoList.add(DeviceInfo("Build ID", systemInfoHelper.getBuildId()))
+        deviceInfoList.add(DeviceInfo("Java VM Version", systemInfoHelper.getJavaVmVersion()))
+
+        // --- Device & OS Section ---
+        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
+        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
+
+        // --- Clickable Summary Items ---
+        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
+        deviceInfoList.add(DeviceInfo("All Apps", appInfoHelper.getAllAppsDetails().size.toString()))
+        
         val adapter = DeviceInfoAdapter(deviceInfoList)
         
         adapter.onItemClick = { deviceInfo ->
@@ -59,7 +69,7 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(this, SensorListActivity::class.java)
                     startActivity(intent)
                 }
-                "All Apps" -> { // Changed from "User Installed Apps" to "All Apps"
+                "All Apps" -> {
                     val intent = Intent(this, AppListActivity::class.java)
                     startActivity(intent)
                 }
