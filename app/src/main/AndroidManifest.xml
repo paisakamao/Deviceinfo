@@ -3,27 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.deviceinfo.deviceinfoapp">
 
-    <!-- No special permissions are required for this basic app. -->
-    <!-- If you were to add features like network state or Wi-Fi info, -->
-    <!-- you would need to declare permissions here, e.g.: -->
-    <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DeviceInfoApp"
         tools:targetApi="31">
 
-        <!--
-        The main and only activity for this application.
-        The <intent-filter> tells the Android system that this is the
-        "main" entry point for the app and should be launchable from the home screen.
-        -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -36,3 +26,4 @@
     </application>
 
 </manifest>
+```4.  Commit the changes.
