@@ -7,9 +7,10 @@ import com.deviceinfo.deviceinfoapp.model.AppInfo
 
 class AppInfoHelper(private val context: Context) {
 
-    // Get all applications once and store them
+    // Get all applications once and store them.
+    // THIS IS THE ONE-LINE FIX: We now use getInstalledPackages for a complete list.
     private val allInstalledApps: List<ApplicationInfo> by lazy {
-        context.packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        context.packageManager.getInstalledPackages(0).mapNotNull { it.applicationInfo }
     }
 
     // A function to get the full, detailed list based on a filter
