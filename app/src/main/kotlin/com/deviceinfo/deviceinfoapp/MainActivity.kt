@@ -6,10 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.RamInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.StorageInfoHelper
+import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper // The only helper we need now
 
 class MainActivity : AppCompatActivity() {
 
@@ -20,29 +17,21 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our helpers
+        // We only need to create one helper!
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val ramInfoHelper = RamInfoHelper(this)
-        val storageInfoHelper = StorageInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this)
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
         // --- RAM Section ---
-        deviceInfoList.add(DeviceInfo("Total RAM", ramInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Used RAM", ramInfoHelper.getUsedRam()))
-        deviceInfoList.add(DeviceInfo("Free RAM", ramInfoHelper.getAvailableRam()))
+        deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
+        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
+        deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
 
         // --- Storage Section ---
-        deviceInfoList.add(DeviceInfo("Total Internal Storage", storageInfoHelper.getTotalInternalStorage()))
-        deviceInfoList.add(DeviceInfo("Available Internal Storage", storageInfoHelper.getAvailableInternalStorage()))
-        deviceInfoList.add(DeviceInfo("Internal Storage Used", storageInfoHelper.getInternalStorageUsagePercentage()))
+        deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
+        deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
+        deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         
-        // --- Battery Section ---
-        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
-        deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
-
         // --- Device & OS Section ---
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
         deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
