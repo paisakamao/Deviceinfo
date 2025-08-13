@@ -3,6 +3,35 @@ package com.deviceinfo.deviceinfoapp.utils
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import com.deviceinfo.deviceinfoapp.model.AppInfo
+
+class AppInfoHelper(private val context: Context) {
+
+    fun getInstalledAppsDetails(): List<AppInfo> {
+        val packageManager = context.packageManager
+        val allApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        val userApps = allApps.filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
+
+        return userApps.map { appInfo ->
+            AppInfo(
+                appName = packageManager.getApplicationLabel(appInfo).toString(),
+                packageName = appInfo.packageName,
+                icon = packageManager.getApplicationIcon(appInfo)
+            )
+        }.sortedBy { it.appName.lowercase() }
+    }
+
+    fun getUserAppCount(): String {
+        val packageManager = context.packageManager
+        val allApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
+        val userApps = allApps.filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
+        return userApps.size.toString()
+    }
+}package com.deviceinfo.deviceinfoapp.utils
+
+import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 
 class AppInfoHelper(private val context: Context) {
 
