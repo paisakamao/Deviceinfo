@@ -6,7 +6,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper // The only helper we need now
+// Import the new helper
+import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
+import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper 
 
 class MainActivity : AppCompatActivity() {
 
@@ -17,8 +19,9 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // We only need to create one helper!
+        // Create instances of our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
+        val batteryInfoHelper = BatteryInfoHelper(this) // Create an instance of the battery helper
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
@@ -32,6 +35,11 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         
+        // --- Battery Section (using the correct helper) ---
+        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
+        deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
+        deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
+
         // --- Device & OS Section ---
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
         deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
