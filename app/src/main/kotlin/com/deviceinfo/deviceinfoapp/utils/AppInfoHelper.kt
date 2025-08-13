@@ -4,45 +4,64 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import com.deviceinfo.deviceinfoapp.model.AppInfo
+import java.io.File
 
 class AppInfoHelper(private val context: Context) {
 
-    // Get all applications once and store them.
-    // THIS IS THE ONE-LINE FIX: We now use getInstalledPackages for a complete list.
     private val allInstalledApps: List<ApplicationInfo> by lazy {
         context.packageManager.getInstalledPackages(0).mapNotNull { it.applicationInfo }
     }
 
-    // A function to get the full, detailed list based on a filter
+    // A private helper to get the readable name of the installer
+    private fun getInstallerSourceName(packageName: String): String {
+        val installerPackage = try {
+            context.packageManager.getInstallerPackageName(packageName)
+        } catch (e: Exception) {
+            return "Unknown"
+        }
+        return when (installerPackage) {
+            "com.android.vending" -> "Google Play Store"
+            "com.amazon.venezia" -> "Amazon Appstore"
+            null -> "Sideloaded / System"
+            else -> installerPackage // Show the package name for other stores
+        }
+    }
+    
+    // A private helper to get the size of the app's APK file
+    private fun getAppSize(appInfo: ApplicationInfo): String {
+        return try {
+            val file = File(appInfo.sourceDir)
+            FormattingUtils.formatSize(file.length())
+        } catch (e: Exception) {
+            "N/A"
+        }
+    }
+
     private fun getApps(filter: (ApplicationInfo) -> Boolean): List<AppInfo> {
         return allInstalledApps
             .filter(filter)
-            .map { appInfo ->
-                AppInfo(
-                    appName = context.packageManager.getApplicationLabel(appInfo).toString(),
-                    packageName = appInfo.packageName,
-                    icon = context.packageManager.getApplicationIcon(appInfo)
-                )
+            .mapNotNull { appInfo ->
+                try {
+                    val packageInfo = context.packageManager.getPackageInfo(appInfo.packageName, 0)
+                    AppInfo(
+                        appName = context.packageManager.getApplicationLabel(appInfo).toString(),
+                        packageName = appInfo.packageName,
+                        icon = context.packageManager.getApplicationIcon(appInfo),
+                        versionName = packageInfo.versionName ?: "N/A",
+                        appSize = getAppSize(appInfo),
+                        installerSource = getInstallerSourceName(appInfo.packageName)
+                    )
+                } catch (e: PackageManager.NameNotFoundException) {
+                    null // Skip if the package is somehow uninstalled during the process
+                }
             }.sortedBy { it.appName.lowercase() }
     }
     
-    fun getAllAppsDetails(): List<AppInfo> {
-        // A simple filter that accepts everything
-        return getApps { true }
-    }
+    fun getAllAppsDetails(): List<AppInfo> = getApps { true }
 
-    fun getUserAppsDetails(): List<AppInfo> {
-        // Filter for non-system apps that are enabled
-        return getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 && it.enabled }
-    }
+    fun getUserAppsDetails(): List<AppInfo> = getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 && it.enabled }
 
-    fun getSystemAppsDetails(): List<AppInfo> {
-        // Filter for system apps that are enabled
-        return getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0 && it.enabled }
-    }
+    fun getSystemAppsDetails(): List<AppInfo> = getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0 && it.enabled }
 
-    fun getDisabledAppsDetails(): List<AppInfo> {
-        // Filter for any app that is disabled
-        return getApps { !it.enabled }
-    }
+    fun getDisabledAppsDetails(): List<AppInfo> = getApps { !it.enabled }
 }
