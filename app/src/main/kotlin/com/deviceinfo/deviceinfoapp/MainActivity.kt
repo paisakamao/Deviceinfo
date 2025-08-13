@@ -9,6 +9,7 @@ import com.deviceinfo.deviceinfoapp.model.DeviceInfo
 import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
 import com.deviceinfo.deviceinfoapp.utils.CpuInfoHelper
 import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper
+import com.deviceinfo.deviceinfoapp.utils.DisplayInfoHelper // Import the new helper
 
 class MainActivity : AppCompatActivity() {
 
@@ -23,12 +24,13 @@ class MainActivity : AppCompatActivity() {
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
+        val displayInfoHelper = DisplayInfoHelper(this) // New helper instance
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
         // --- RAM Section ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfo_Helper.getUsedRam()))
+        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
         deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
 
         // --- Storage Section ---
@@ -41,17 +43,20 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
         deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
 
-        // --- CPU Section (Corrected) ---
-        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel())) // This line is now correct
+        // --- CPU Section ---
+        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
+
+        // --- Display Section ---
+        deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
+        deviceInfoList.add(DeviceInfo("Screen Density", displayInfoHelper.getScreenDensity()))
+        deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
 
         // --- Device & OS Section ---
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
         deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
         deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
         deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
-        deviceInfoList.add(DeviceInfo("Screen Resolution", deviceInfoHelper.getScreenResolution()))
-        deviceInfoList.add(DeviceInfo("Screen Density", deviceInfoHelper.getScreenDensity()))
         
         val adapter = DeviceInfoAdapter(deviceInfoList)
         recyclerView.adapter = adapter
