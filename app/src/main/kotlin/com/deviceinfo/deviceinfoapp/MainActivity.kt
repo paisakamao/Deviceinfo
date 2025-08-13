@@ -6,10 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.CpuInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper
-import com.deviceinfo.deviceinfoapp.utils.DisplayInfoHelper // Import the new helper
+import com.deviceinfo.deviceinfoapp.utils.* // Use a wildcard import to keep it clean
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,7 +21,8 @@ class MainActivity : AppCompatActivity() {
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
-        val displayInfoHelper = DisplayInfoHelper(this) // New helper instance
+        val displayInfoHelper = DisplayInfoHelper(this)
+        val sensorInfoHelper = SensorInfoHelper(this) // New helper instance
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
@@ -51,6 +49,9 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Screen Density", displayInfoHelper.getScreenDensity()))
         deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
+        
+        // --- Sensors Section ---
+        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorCount()))
 
         // --- Device & OS Section ---
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
