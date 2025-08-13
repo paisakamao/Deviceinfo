@@ -22,13 +22,13 @@ class MainActivity : AppCompatActivity() {
         // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
-        val cpuInfoHelper = CpuInfoHelper() // New helper
+        val cpuInfoHelper = CpuInfoHelper()
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
         // --- RAM Section ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
+        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfo_Helper.getUsedRam()))
         deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
 
         // --- Storage Section ---
@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
         deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
 
-        // --- CPU Section ---
-        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
+        // --- CPU Section (Corrected) ---
+        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel())) // This line is now correct
         deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
 
         // --- Device & OS Section ---
