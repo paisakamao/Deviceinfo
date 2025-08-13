@@ -13,6 +13,35 @@ import java.text.DecimalFormat
 
 class DeviceInfoHelper(private val context: Context) {
 
+    // --- NEW: A single place to get memory info to avoid repeating code ---
+    private fun getMemoryInfo(): ActivityManager.MemoryInfo {
+        val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return ActivityManager.MemoryInfo().also { actManager.getMemoryInfo(it) }
+    }
+
+    /**
+     * Gets the total RAM of the device.
+     */
+    fun getTotalRam(): String {
+        return formatSize(getMemoryInfo().totalMem)
+    }
+
+    /**
+     * NEW: Gets the available ("free") RAM.
+     */
+    fun getAvailableRam(): String {
+        return formatSize(getMemoryInfo().availMem)
+    }
+
+    /**
+     * NEW: Calculates and returns the used RAM.
+     */
+    fun getUsedRam(): String {
+        val memInfo = getMemoryInfo()
+        val usedMem = memInfo.totalMem - memInfo.availMem
+        return formatSize(usedMem)
+    }
+
     /**
      * Gets the device model.
      */
@@ -34,23 +63,12 @@ class DeviceInfoHelper(private val context: Context) {
     fun getSDKVersion(): String = Build.VERSION.SDK_INT.toString()
 
     /**
-     * Gets the total RAM of the device.
-     */
-    fun getTotalRam(): String {
-        val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memInfo = ActivityManager.MemoryInfo()
-        actManager.getMemoryInfo(memInfo)
-        return formatSize(memInfo.totalMem)
-    }
-
-    /**
      * Gets CPU information by reading /proc/cpuinfo.
      */
     fun getCpuInfo(): String {
         return try {
             val file = File("/proc/cpuinfo")
             val text = file.readText()
-            // Extract the "model name" or "Hardware" line
             val modelNameLine = text.lines().find { it.startsWith("model name") }
             val hardwareLine = text.lines().find { it.startsWith("Hardware") }
             modelNameLine?.substringAfter(":")?.trim() ?: hardwareLine?.substringAfter(":")?.trim() ?: "N/A"
@@ -65,14 +83,12 @@ class DeviceInfoHelper(private val context: Context) {
      */
     fun getScreenResolution(): String {
         val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        // Check if the device is Android 11 (API 30) or higher
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val metrics = windowManager.currentWindowMetrics
             val width = metrics.bounds.width()
             val height = metrics.bounds.height()
             return "${height} x ${width}"
         } else {
-            // Use the older, deprecated method for older devices
             @Suppress("DEPRECATION")
             val display = windowManager.defaultDisplay
             @Suppress("DEPRECATION")
