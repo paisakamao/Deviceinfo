@@ -35,20 +35,22 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
-        deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
-        deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
-        deviceInfoList.add(DeviceInfo("Screen Density", displayInfoHelper.getScreenDensity()))
         deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
         deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
-        deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
-        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
-        deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
-        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
-        deviceInfoList.add(DeviceInfo("User Installed Apps", appInfoHelper.getUserAppCount()))
         
+        // --- THIS SECTION IS NOW CORRECTED ---
+        // Get the app counts for display
+        val userAppCount = appInfoHelper.getUserAppsDetails().size
+        val systemAppCount = appInfoHelper.getSystemAppsDetails().size
+        val totalAppCount = userAppCount + systemAppCount
+        
+        // Add the clickable summary items
+        deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
+        // Display the total count, matching the reference app
+        deviceInfoList.add(DeviceInfo("All Apps", totalAppCount.toString()))
+
         val adapter = DeviceInfoAdapter(deviceInfoList)
         
         adapter.onItemClick = { deviceInfo ->
@@ -57,7 +59,7 @@ class MainActivity : AppCompatActivity() {
                     val intent = Intent(this, SensorListActivity::class.java)
                     startActivity(intent)
                 }
-                "User Installed Apps" -> {
+                "All Apps" -> { // Changed from "User Installed Apps" to "All Apps"
                     val intent = Intent(this, AppListActivity::class.java)
                     startActivity(intent)
                 }
