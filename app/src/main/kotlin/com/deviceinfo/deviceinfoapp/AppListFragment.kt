@@ -32,7 +32,7 @@ class AppListFragment : Fragment() {
         recyclerView.layoutManager = LinearLayoutManager(context)
 
         val appInfoHelper = AppInfoHelper(requireContext())
-        
+
         // Load the correct list based on the app type
         val appList: List<AppInfo> = when (appType) {
             "user" -> appInfoHelper.getUserAppsDetails()
@@ -41,7 +41,7 @@ class AppListFragment : Fragment() {
             "disabled" -> appInfoHelper.getDisabledAppsDetails()
             else -> emptyList()
         }
-        
+
         recyclerView.adapter = AppListAdapter(appList)
         return view
     }
@@ -68,34 +68,3 @@ class AppListFragment : Fragment() {
         android:id="@+id/fragmentRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
-    ```
-
----
-
-### **Step 3: Create the `ViewPagerAdapter.kt`**
-
-This adapter connects our `AppListFragment` to the `ViewPager2`.
-
-1.  Navigate to `app/src/main/kotlin/com/deviceinfo/deviceinfoapp/adapter/`.
-2.  Create a new file named `ViewPagerAdapter.kt`.
-3.  Paste this code:
-
-```kotlin
-package com.deviceinfo.deviceinfoapp.adapter
-
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.deviceinfo.deviceinfoapp.ui.AppListFragment
-
-class ViewPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
-
-    private val tabTypes = listOf("user", "system", "all", "disabled")
-
-    override fun getItemCount(): Int = tabTypes.size
-
-    override fun createFragment(position: Int): Fragment {
-        // Create a new fragment instance for the given tab
-        return AppListFragment.newInstance(tabTypes[position])
-    }
-}
