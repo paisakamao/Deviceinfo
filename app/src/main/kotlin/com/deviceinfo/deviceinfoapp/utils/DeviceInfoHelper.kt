@@ -9,9 +9,7 @@ import android.util.DisplayMetrics
 import android.view.WindowManager
 import java.io.File
 import java.io.IOException
-import java.io.RandomAccessFile
 import java.text.DecimalFormat
-import java.util.regex.Pattern
 
 class DeviceInfoHelper(private val context: Context) {
 
@@ -63,14 +61,14 @@ class DeviceInfoHelper(private val context: Context) {
     }
 
     /**
-     * Gets the screen resolution in pixels.
+     * Gets the screen resolution in pixels. This is the modern, non-deprecated way.
      */
     fun getScreenResolution(): String {
-        val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val display = wm.defaultDisplay
-        val metrics = DisplayMetrics()
-        display.getMetrics(metrics)
-        return "${metrics.heightPixels} x ${metrics.widthPixels}"
+        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val metrics = windowManager.currentWindowMetrics
+        val width = metrics.bounds.width()
+        val height = metrics.bounds.height()
+        return "${height} x ${width}"
     }
 
     /**
