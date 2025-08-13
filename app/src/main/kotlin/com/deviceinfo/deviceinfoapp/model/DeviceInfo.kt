@@ -8,4 +8,4 @@ package com.deviceinfo.deviceinfoapp.model
 data class DeviceInfo(
     val label: String,
     val value: String
-)```
+)
