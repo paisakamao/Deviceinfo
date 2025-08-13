@@ -1,0 +1,28 @@
+// This block configures where Gradle should look for build plugins.
+pluginManagement {
+    repositories {
+        // Google's Maven repository (for Android Gradle Plugin and other Google libraries)
+        google()
+        // The central repository for most open-source JVM libraries.
+        mavenCentral()
+        // The official Gradle plugin portal.
+        gradlePluginPortal()
+    }
+}
+
+// This block configures where Gradle should look for project dependencies.
+dependencyResolutionManagement {
+    // This setting enforces that all repositories are declared here, which improves build reliability.
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Sets the name for the root project.
+rootProject.name = "DeviceInfoApp"
+
+// This is the most important line for project structure. It tells Gradle to
+// include the module located in the 'app' directory in the build.
+include ':app'
