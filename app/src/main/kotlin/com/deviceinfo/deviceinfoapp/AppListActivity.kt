@@ -2,25 +2,35 @@ package com.deviceinfo.deviceinfoapp
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.deviceinfo.deviceinfoapp.adapter.AppListAdapter
-import com.deviceinfo.deviceinfoapp.utils.AppInfoHelper
+import androidx.viewpager2.widget.ViewPager2
+import com.deviceinfo.deviceinfoapp.adapter.ViewPagerAdapter
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
 
 class AppListActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_app_list)
 
-        supportActionBar?.title = "User Installed Apps"
+        supportActionBar?.title = "Application Info"
 
-        val recyclerView: RecyclerView = findViewById(R.id.appRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        val tabLayout: TabLayout = findViewById(R.id.tabLayout)
+        val viewPager: ViewPager2 = findViewById(R.id.viewPager)
 
-        val appInfoHelper = AppInfoHelper(this)
-        val appList = appInfoHelper.getInstalledAppsDetails()
+        // Set up the adapter for the ViewPager
+        val adapter = ViewPagerAdapter(this)
+        viewPager.adapter = adapter
 
-        val adapter = AppListAdapter(appList)
-        recyclerView.adapter = adapter
+        // Connect the TabLayout and the ViewPager
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            tab.text = when (position) {
+                0 -> "User"
+                1 -> "System"
+                2 -> "All"
+                3 -> "Disabled"
+                else -> ""
+            }
+        }.attach()
     }
 }
