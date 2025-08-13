@@ -42,26 +42,8 @@ class DeviceInfoHelper(private val context: Context) {
 
     fun getSDKVersion(): String = Build.VERSION.SDK_INT.toString()
 
-    fun getCpuInfo(): String {
-        return try {
-            val file = File("/proc/cpuinfo")
-            val text = file.readText()
-            val modelNameLine = text.lines().find { it.startsWith("model name") }
-            val hardwareLine = text.lines().find { it.startsWith("Hardware") }
-            modelNameLine?.substringAfter(":")?.trim() ?: hardwareLine?.substringAfter(":")?.trim() ?: "N/A"
-        } catch (e: IOException) {
-            e.printStackTrace()
-            "N/A"
-        }
-    }
 
-
-
-    fun getScreenDensity(): String {
-        val metrics = context.resources.displayMetrics
-        return "${metrics.densityDpi} dpi"
-    }
-    
+  
     // --- NEW HELPER FOR STORAGE ---
     private fun getInternalStorageStatFs(): StatFs {
         val path = Environment.getDataDirectory()
