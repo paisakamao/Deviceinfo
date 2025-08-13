@@ -6,7 +6,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-// Import the new helper
+// Import BOTH helpers
 import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
 import com.deviceinfo.deviceinfoapp.utils.DeviceInfoHelper 
 
@@ -19,29 +19,28 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of our helpers
+        // Create an instance of each helper
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this) // Create an instance of the battery helper
+        val batteryInfoHelper = BatteryInfoHelper(this)
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // --- RAM Section ---
+        // --- Get info from deviceInfoHelper ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
         deviceInfoList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
-
-        // --- Storage Section ---
         deviceInfoList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
         deviceInfoList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        
-        // --- Battery Section (using the correct helper) ---
+        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
+        // ...and so on for the rest of the methods in DeviceInfoHelper.kt
+
+        // --- Get info from batteryInfoHelper ---
         deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
         deviceInfoList.add(DeviceInfo("Battery Temperature", batteryInfoHelper.getBatteryTemperature()))
         deviceInfoList.add(DeviceInfo("Battery Voltage", batteryInfoHelper.getBatteryVoltage()))
 
-        // --- Device & OS Section ---
-        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
+        // You can add the rest of the device info calls here
         deviceInfoList.add(DeviceInfo("Manufacturer", deviceInfoHelper.getManufacturer()))
         deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
         deviceInfoList.add(DeviceInfo("SDK Version", deviceInfoHelper.getSDKVersion()))
