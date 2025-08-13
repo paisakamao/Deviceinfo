@@ -47,7 +47,7 @@ jobs:
 
       # 6. Upload the generated APK as an artifact
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # <-- THIS LINE IS THE FIX
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
