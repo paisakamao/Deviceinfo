@@ -37,10 +37,17 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # 4. Run the build to make sure the app compiles successfully
-      - name: Build with Gradle
+      # 4. Run the full build and test cycle
+      - name: Build and Test Project
         run: bash ./gradlew build
 
-      # 5. Run unit tests
-      - name: Run unit tests
-        run: bash ./gradlew test
+      # 5. Build the debug APK
+      - name: Build Debug APK
+        run: bash ./gradlew assembleDebug
+
+      # 6. Upload the generated APK as an artifact
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
