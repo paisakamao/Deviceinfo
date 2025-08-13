@@ -7,34 +7,41 @@ import com.deviceinfo.deviceinfoapp.model.AppInfo
 
 class AppInfoHelper(private val context: Context) {
 
-    /**
-     * Gets a detailed list of all user-installed applications, sorted alphabetically.
-     */
-    fun getInstalledAppsDetails(): List<AppInfo> {
-        val packageManager = context.packageManager
-        // Get a list of all installed packages from the system
-        val allApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-        
-        // Filter this list to include only non-system apps
-        val userApps = allApps.filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-
-        // Convert the filtered list into our own AppInfo data model
-        return userApps.map { appInfo ->
-            AppInfo(
-                appName = packageManager.getApplicationLabel(appInfo).toString(),
-                packageName = appInfo.packageName,
-                icon = packageManager.getApplicationIcon(appInfo)
-            )
-        }.sortedBy { it.appName.lowercase() } // Sort the final list alphabetically
+    // Get all applications once and store them
+    private val allInstalledApps: List<ApplicationInfo> by lazy {
+        context.packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
     }
 
-    /**
-     * Returns the total number of user-installed applications as a string.
-     */
-    fun getUserAppCount(): String {
-        val packageManager = context.packageManager
-        val allApps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-        val userApps = allApps.filter { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
-        return userApps.size.toString()
+    // A function to get the full, detailed list based on a filter
+    private fun getApps(filter: (ApplicationInfo) -> Boolean): List<AppInfo> {
+        return allInstalledApps
+            .filter(filter)
+            .map { appInfo ->
+                AppInfo(
+                    appName = context.packageManager.getApplicationLabel(appInfo).toString(),
+                    packageName = appInfo.packageName,
+                    icon = context.packageManager.getApplicationIcon(appInfo)
+                )
+            }.sortedBy { it.appName.lowercase() }
+    }
+    
+    fun getAllAppsDetails(): List<AppInfo> {
+        // A simple filter that accepts everything
+        return getApps { true }
+    }
+
+    fun getUserAppsDetails(): List<AppInfo> {
+        // Filter for non-system apps that are enabled
+        return getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) == 0 && it.enabled }
+    }
+
+    fun getSystemAppsDetails(): List<AppInfo> {
+        // Filter for system apps that are enabled
+        return getApps { (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0 && it.enabled }
+    }
+
+    fun getDisabledAppsDetails(): List<AppInfo> {
+        // Filter for any app that is disabled
+        return getApps { !it.enabled }
     }
 }
