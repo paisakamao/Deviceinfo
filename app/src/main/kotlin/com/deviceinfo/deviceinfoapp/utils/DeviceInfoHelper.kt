@@ -10,61 +10,38 @@ import android.view.WindowManager
 import java.io.File
 import java.io.IOException
 import java.text.DecimalFormat
+import kotlin.math.log10
+import kotlin.math.pow
 
 class DeviceInfoHelper(private val context: Context) {
 
-    // --- NEW: A single place to get memory info to avoid repeating code ---
     private fun getMemoryInfo(): ActivityManager.MemoryInfo {
         val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         return ActivityManager.MemoryInfo().also { actManager.getMemoryInfo(it) }
     }
 
-    /**
-     * Gets the total RAM of the device.
-     */
     fun getTotalRam(): String {
         return formatSize(getMemoryInfo().totalMem)
     }
 
-    /**
-     * NEW: Gets the available ("free") RAM.
-     */
     fun getAvailableRam(): String {
         return formatSize(getMemoryInfo().availMem)
     }
 
-    /**
-     * NEW: Calculates and returns the used RAM.
-     */
     fun getUsedRam(): String {
         val memInfo = getMemoryInfo()
         val usedMem = memInfo.totalMem - memInfo.availMem
         return formatSize(usedMem)
     }
 
-    /**
-     * Gets the device model.
-     */
     fun getDeviceModel(): String = Build.MODEL
 
-    /**
-     * Gets the device manufacturer.
-     */
     fun getManufacturer(): String = Build.MANUFACTURER
 
-    /**
-     * Gets the Android version name (e.g., "12").
-     */
     fun getAndroidVersion(): String = Build.VERSION.RELEASE
 
-    /**
-     * Gets the Android SDK version code (e.g., 31).
-     */
     fun getSDKVersion(): String = Build.VERSION.SDK_INT.toString()
 
-    /**
-     * Gets CPU information by reading /proc/cpuinfo.
-     */
     fun getCpuInfo(): String {
         return try {
             val file = File("/proc/cpuinfo")
@@ -78,9 +55,6 @@ class DeviceInfoHelper(private val context: Context) {
         }
     }
 
-    /**
-     * Gets the screen resolution in pixels. This is now safe for all API levels.
-     */
     fun getScreenResolution(): String {
         val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -99,43 +73,48 @@ class DeviceInfoHelper(private val context: Context) {
         }
     }
 
-    /**
-     * Gets the screen density in DPI.
-     */
     fun getScreenDensity(): String {
         val metrics = context.resources.displayMetrics
         return "${metrics.densityDpi} dpi"
     }
+    
+    // --- NEW HELPER FOR STORAGE ---
+    private fun getInternalStorageStatFs(): StatFs {
+        val path = Environment.getDataDirectory()
+        return StatFs(path.path)
+    }
 
-    /**
-     * Gets the total internal storage size.
-     */
     fun getTotalInternalStorage(): String {
-        val path = Environment.getDataDirectory()
-        val stat = StatFs(path.path)
-        val blockSize = stat.blockSizeLong
-        val totalBlocks = stat.blockCountLong
-        return formatSize(totalBlocks * blockSize)
+        val stat = getInternalStorageStatFs()
+        val totalBytes = stat.blockCountLong * stat.blockSizeLong
+        return formatSize(totalBytes)
     }
 
-    /**
-     * Gets the available internal storage size.
-     */
     fun getAvailableInternalStorage(): String {
-        val path = Environment.getDataDirectory()
-        val stat = StatFs(path.path)
-        val blockSize = stat.blockSizeLong
-        val availableBlocks = stat.availableBlocksLong
-        return formatSize(availableBlocks * blockSize)
+        val stat = getInternalStorageStatFs()
+        val availableBytes = stat.availableBlocksLong * stat.blockSizeLong
+        return formatSize(availableBytes)
     }
 
     /**
-     * Helper function to format size in bytes to KB, MB, GB, etc.
+     * NEW: Calculates the internal storage usage percentage.
      */
+    fun getInternalStorageUsagePercentage(): String {
+        val stat = getInternalStorageStatFs()
+        val totalBytes = stat.blockCountLong * stat.blockSizeLong
+        val availableBytes = stat.availableBlocksLong * stat.blockSizeLong
+        val usedBytes = totalBytes - availableBytes
+        
+        if (totalBytes <= 0) return "0%"
+        
+        val percentage = (usedBytes * 100.0 / totalBytes).toInt()
+        return "$percentage%"
+    }
+
     private fun formatSize(size: Long): String {
         if (size <= 0) return "0"
         val units = arrayOf("B", "KB", "MB", "GB", "TB")
-        val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
-        return DecimalFormat("#,##0.#").format(size / Math.pow(1024.0, digitGroups.toDouble())) + " " + units[digitGroups]
+        val digitGroups = (log10(size.toDouble()) / log10(1024.0)).toInt()
+        return DecimalFormat("#,##0.#").format(size / 1024.0.pow(digitGroups.toDouble())) + " " + units[digitGroups]
     }
 }
