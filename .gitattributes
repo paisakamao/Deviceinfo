@@ -1,0 +1,23 @@
+# Set default behavior, in case users don't have core.autocrlf set.
+* text=auto
+
+#
+# The above will handle all files NOT found below
+#
+# These files are text and should be normalized (Convert CRLF to LF)
+*.md text
+.gitignore text
+.gitattributes text
+build.gradle text
+settings.gradle text
+gradle.properties text
+proguard-rules.pro text
+
+# These files are scripts and must have LF endings
+gradlew text eol=lf
+*.sh text eol=lf
+
+# These files are binary and should be left untouched
+*.jar binary
+*.png binary
+*.jpg binary
