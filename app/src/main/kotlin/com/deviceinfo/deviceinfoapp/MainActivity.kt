@@ -23,9 +23,12 @@ class MainActivity : AppCompatActivity() {
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
-        val appInfoHelper = AppInfoHelper(this) // New helper instance
+        val appInfoHelper = AppInfoHelper(this)
         
         val masterList = mutableListOf<Any>()
+
+        // Get the detailed sensor list once
+        val sensorList = sensorInfoHelper.getSensorDetailsList()
 
         // --- Add all the general device info ---
         masterList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
@@ -33,20 +36,22 @@ class MainActivity : AppCompatActivity() {
         masterList.add(DeviceInfo("Free RAM", deviceInfoHelper.getAvailableRam()))
         masterList.add(DeviceInfo("Total Internal Storage", deviceInfoHelper.getTotalInternalStorage()))
         masterList.add(DeviceInfo("Available Internal Storage", deviceInfoHelper.getAvailableInternalStorage()))
-        masterList.add(DeviceInfo("Internal Storage Used", deviceInfoInfoHelper.getInternalStorageUsagePercentage()))
+        // This line is now corrected: deviceInfoHelper, not deviceInfoInfoHelper
+        masterList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage())) 
         masterList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
         masterList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         masterList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
         masterList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
-        masterList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorCount()))
-        masterList.add(DeviceInfo("User Installed Apps", appInfoHelper.getUserAppCount())) // New info line
+        // This line is now corrected: get the size from the list we already fetched
+        masterList.add(DeviceInfo("Total Sensors", sensorList.size.toString())) 
+        masterList.add(DeviceInfo("User Installed Apps", appInfoHelper.getUserAppCount()))
         masterList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
 
         // --- Add a header for the sensors section ---
         masterList.add(DeviceInfo("--- ALL SENSORS ---", "")) 
 
         // --- Add all the detailed sensor info ---
-        val sensorList = sensorInfoHelper.getSensorDetailsList()
+        // We already have the list, so just add it
         masterList.addAll(sensorList)
 
         val adapter = MasterAdapter(masterList)
