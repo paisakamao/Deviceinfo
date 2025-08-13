@@ -18,7 +18,6 @@ class AppListFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Get the app type from the arguments
         appType = arguments?.getString(ARG_APP_TYPE) ?: "user"
     }
 
@@ -26,14 +25,12 @@ class AppListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_app_list, container, false)
         val recyclerView: RecyclerView = view.findViewById(R.id.fragmentRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(context)
 
         val appInfoHelper = AppInfoHelper(requireContext())
-
-        // Load the correct list based on the app type
+        
         val appList: List<AppInfo> = when (appType) {
             "user" -> appInfoHelper.getUserAppsDetails()
             "system" -> appInfoHelper.getSystemAppsDetails()
@@ -41,7 +38,7 @@ class AppListFragment : Fragment() {
             "disabled" -> appInfoHelper.getDisabledAppsDetails()
             else -> emptyList()
         }
-
+        
         recyclerView.adapter = AppListAdapter(appList)
         return view
     }
@@ -49,7 +46,6 @@ class AppListFragment : Fragment() {
     companion object {
         private const val ARG_APP_TYPE = "app_type"
 
-        // A factory method to create a new instance of this fragment with arguments
         @JvmStatic
         fun newInstance(appType: String) =
             AppListFragment().apply {
@@ -59,12 +55,3 @@ class AppListFragment : Fragment() {
             }
     }
 }
-```5.  **Create the Fragment Layout:**
-    *   Navigate to `app/src/main/res/layout/`.
-    *   Create a new file named `fragment_app_list.xml`.
-    *   Paste this simple `RecyclerView` layout:
-    ```xml
-    <androidx.recyclerview.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/fragmentRecyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
