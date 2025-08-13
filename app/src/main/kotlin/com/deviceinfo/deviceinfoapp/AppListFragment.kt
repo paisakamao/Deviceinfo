@@ -1,0 +1,101 @@
+package com.deviceinfo.deviceinfoapp.ui
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.deviceinfo.deviceinfoapp.R
+import com.deviceinfo.deviceinfoapp.adapter.AppListAdapter
+import com.deviceinfo.deviceinfoapp.model.AppInfo
+import com.deviceinfo.deviceinfoapp.utils.AppInfoHelper
+
+class AppListFragment : Fragment() {
+
+    private lateinit var appType: String
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Get the app type from the arguments
+        appType = arguments?.getString(ARG_APP_TYPE) ?: "user"
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        // Inflate the layout for this fragment
+        val view = inflater.inflate(R.layout.fragment_app_list, container, false)
+        val recyclerView: RecyclerView = view.findViewById(R.id.fragmentRecyclerView)
+        recyclerView.layoutManager = LinearLayoutManager(context)
+
+        val appInfoHelper = AppInfoHelper(requireContext())
+        
+        // Load the correct list based on the app type
+        val appList: List<AppInfo> = when (appType) {
+            "user" -> appInfoHelper.getUserAppsDetails()
+            "system" -> appInfoHelper.getSystemAppsDetails()
+            "all" -> appInfoHelper.getAllAppsDetails()
+            "disabled" -> appInfoHelper.getDisabledAppsDetails()
+            else -> emptyList()
+        }
+        
+        recyclerView.adapter = AppListAdapter(appList)
+        return view
+    }
+
+    companion object {
+        private const val ARG_APP_TYPE = "app_type"
+
+        // A factory method to create a new instance of this fragment with arguments
+        @JvmStatic
+        fun newInstance(appType: String) =
+            AppListFragment().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_APP_TYPE, appType)
+                }
+            }
+    }
+}
+```5.  **Create the Fragment Layout:**
+    *   Navigate to `app/src/main/res/layout/`.
+    *   Create a new file named `fragment_app_list.xml`.
+    *   Paste this simple `RecyclerView` layout:
+    ```xml
+    <androidx.recyclerview.widget.RecyclerView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/fragmentRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+    ```
+
+---
+
+### **Step 3: Create the `ViewPagerAdapter.kt`**
+
+This adapter connects our `AppListFragment` to the `ViewPager2`.
+
+1.  Navigate to `app/src/main/kotlin/com/deviceinfo/deviceinfoapp/adapter/`.
+2.  Create a new file named `ViewPagerAdapter.kt`.
+3.  Paste this code:
+
+```kotlin
+package com.deviceinfo.deviceinfoapp.adapter
+
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.deviceinfo.deviceinfoapp.ui.AppListFragment
+
+class ViewPagerAdapter(activity: FragmentActivity) : FragmentStateAdapter(activity) {
+
+    private val tabTypes = listOf("user", "system", "all", "disabled")
+
+    override fun getItemCount(): Int = tabTypes.size
+
+    override fun createFragment(position: Int): Fragment {
+        // Create a new fragment instance for the given tab
+        return AppListFragment.newInstance(tabTypes[position])
+    }
+}
