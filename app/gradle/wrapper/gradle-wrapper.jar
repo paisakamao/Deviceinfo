@@ -1,4 +1,0 @@
-
-**Content:**
-
-This file is not human-readable code. It is a compiled Java library that contains the logic for the Gradle Wrapper. When you run a command like `./gradlew build`, the `gradlew` script uses this `.jar` file. The code inside the `.jar` reads the `gradle-wrapper.properties` file, checks if the specified version of Gradle is already downloaded, and if not, downloads and unpacks it before running your build command.
