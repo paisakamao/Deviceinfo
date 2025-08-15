@@ -107,36 +107,55 @@ class BatteryInfoHelper(private val context: Context) {
         return if (voltage == -1) "N/A" else "$voltage mV"
     }
 
+    /**
+     * Returns current in milliamps (mA). Official API path first.
+     * Notes:
+     *  - API returns microamps, possibly negative when discharging.
+     *  - Some OEMs return 0; we try a sysfs fallback then average property.
+     */
     fun getCurrentNowMilliAmps(): Int? {
+        // Official API: microamps
         var microA = try {
+            // getIntProperty works fine for CURRENT_NOW on API 24+ as well
             batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW).toLong()
         } catch (_: Throwable) {
             try {
                 batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-            } catch (_: Throwable) { 0L }
+            } catch (_: Throwable) {
+                0L
+            }
         }
 
+        // Fallback: average current if CURRENT_NOW is 0
         if (microA == 0L) {
             microA = try {
                 batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE)
-            } catch (_: Throwable) { 0L }
+            } catch (_: Throwable) {
+                0L
+            }
         }
 
+        // Fallback to sysfs if allowed/available
         if (microA == 0L) {
             try {
                 val f = File("/sys/class/power_supply/battery/current_now")
                 if (f.exists()) {
-                    microA = f.readText().trim().toLong()
+                    val raw = f.readText().trim().toLong()
+                    microA = raw
                 }
             } catch (_: Throwable) { /* ignore */ }
         }
 
         if (microA == 0L || microA == Long.MIN_VALUE) return null
-        return (microA / 1000.0).toInt()
+
+        // Convert to mA; keep sign (discharge often negative)
+        val mA = microA / 1000.0
+        return mA.toInt()
     }
 
     private fun getCurrentNowString(): String {
         val mA = getCurrentNowMilliAmps() ?: return "N/A"
+        // Make sign explicit for clarity
         val sign = if (mA > 0) "+" else ""
         return "$sign$mA mA"
     }
@@ -146,6 +165,7 @@ class BatteryInfoHelper(private val context: Context) {
         val mV = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
         if (mV <= 0) return "N/A"
         val watts = (mA / 1000.0) * (mV / 1000.0)
+        // Small noise filter
         if (abs(watts) < 0.005) return "0.00 W"
         return String.format("%.2f W", watts)
     }
@@ -155,7 +175,9 @@ class BatteryInfoHelper(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val timeInMillis = try {
                 batteryManager.computeChargeTimeRemaining()
-            } catch (_: Throwable) { -1L }
+            } catch (_: Throwable) {
+                -1L
+            }
             if (timeInMillis > 0) return formatDuration(timeInMillis)
         }
         return "Calculating..."
