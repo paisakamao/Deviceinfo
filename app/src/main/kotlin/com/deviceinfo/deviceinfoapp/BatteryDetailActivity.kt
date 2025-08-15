@@ -11,44 +11,51 @@ import com.deviceinfo.deviceinfoapp.databinding.ActivityBatteryDetailBinding
 
 class BatteryDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityBatteryDetailBinding
+    private var batteryReceiver: BroadcastReceiver? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityBatteryDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Battery Details"
-        
         setupBatteryMonitoring()
     }
 
     private fun setupBatteryMonitoring() {
-        val batteryReceiver = object : BroadcastReceiver() {
+        // Initial update
+        updateBatteryData()
+
+        // Register for updates
+        batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                intent?.let { updateBatteryData(it) }
+                updateBatteryData(intent)
             }
         }
-        
+
         registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
-    private fun updateBatteryData(intent: Intent) {
+    private fun updateBatteryData(intent: Intent? = null) {
+        val batteryIntent = intent ?: registerReceiver(
+            null,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED)
+        ) ?: return
+
         val batteryManager = getSystemService(BATTERY_SERVICE) as BatteryManager
         
-        // Current in mA (negative if charging)
-        val currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) / 1000
-        
-        // Update UI
-        binding.currentText.text = when {
-            currentNow > 0 -> "Discharging: $currentNow mA"
-            currentNow < 0 -> "Charging: ${-currentNow} mA"
-            else -> "Current: 0 mA"
+        try {
+            // Current in mA (may be negative if charging)
+            val currentNow = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) / 1000
+            val dischargeRate = if (currentNow > 0) currentNow else 0
+            
+            binding.currentText.text = "Discharge: $dischargeRate mA"
+        } catch (e: SecurityException) {
+            binding.currentText.text = "Current data unavailable"
         }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
+    override fun onDestroy() {
+        super.onDestroy()
+        batteryReceiver?.let { unregisterReceiver(it) }
     }
 }
