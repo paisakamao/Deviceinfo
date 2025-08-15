@@ -5,31 +5,29 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.deviceinfo.deviceinfoapp.adapter.DeviceInfoAdapter
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
-import com.deviceinfo.deviceinfoapp.utils.BatteryInfoHelper
+import com.deviceinfo.deviceinfoapp.utils.BatteryInfoProvider
 
 class BatteryDetailActivity : AppCompatActivity() {
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var batteryInfoHelper: BatteryInfoHelper
     private val batteryDetailsList = mutableListOf<DeviceInfo>()
     private lateinit var adapter: DeviceInfoAdapter
+    private lateinit var batteryProvider: BatteryInfoProvider
 
-    private val handler = Handler(Looper.getMainLooper())
-    private val updateIntervalMs = 1000L // 1 second timer
-
-    // Declare with lateinit, initialize in onCreate
-    private lateinit var realTimeRunnable: Runnable
-
-    private val batteryEventReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    // This is the core of the solution, just like the reference app
+    private val batteryInfoReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            updateSlowData()
+            intent?.let {
+                // When the system sends an update, process it and refresh the screen
+                val newDetails = batteryProvider.getDetailsFromIntent(it)
+                batteryDetailsList.clear()
+                batteryDetailsList.addAll(newDetails)
+                adapter.notifyDataSetChanged()
+            }
         }
     }
 
@@ -38,62 +36,24 @@ class BatteryDetailActivity : AppCompatActivity() {
         setContentView(R.layout.activity_battery_detail)
         supportActionBar?.title = "Battery Details"
 
-        recyclerView = findViewById(R.id.batteryDetailRecyclerView)
+        val recyclerView: RecyclerView = findViewById(R.id.batteryDetailRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         
-        batteryInfoHelper = BatteryInfoHelper(this)
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
-
-        // Initialize inside onCreate where it is safe
-        realTimeRunnable = Runnable {
-            updateFastData()
-            handler.postDelayed(realTimeRunnable, updateIntervalMs)
-        }
+        
+        batteryProvider = BatteryInfoProvider(this)
     }
 
     override fun onResume() {
         super.onResume()
-        registerReceiver(batteryEventReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        handler.post(realTimeRunnable)
-        updateSlowData() // Initial full load
+        // Start listening for battery updates when the screen is visible
+        registerReceiver(batteryInfoReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver(batteryEventReceiver)
-        handler.removeCallbacks(realTimeRunnable)
-    }
-
-    private fun updateSlowData() {
-        val slowDetails = batteryInfoHelper.getSlowUpdateDetails()
-        
-        if (batteryDetailsList.isEmpty()) {
-            batteryDetailsList.addAll(slowDetails)
-            // Add placeholders for fast data on initial load
-            batteryDetailsList.add(DeviceInfo("Voltage", "Loading..."))
-            batteryDetailsList.add(DeviceInfo("Current (Real-time)", "Loading..."))
-            batteryDetailsList.add(DeviceInfo("Power (Real-time)", "Loading..."))
-            adapter.notifyDataSetChanged()
-        } else {
-            slowDetails.forEach { newItem ->
-                val index = batteryDetailsList.indexOfFirst { it.label == newItem.label }
-                if (index != -1) {
-                    batteryDetailsList[index] = newItem
-                    adapter.notifyItemChanged(index)
-                }
-            }
-        }
-    }
-
-    private fun updateFastData() {
-        val fastDetails = batteryInfoHelper.getFastUpdateDetails()
-        fastDetails.forEach { (label, value) ->
-            val index = batteryDetailsList.indexOfFirst { it.label == label }
-            if (index != -1) {
-                batteryDetailsList[index] = DeviceInfo(label, value)
-                adapter.notifyItemChanged(index)
-            }
-        }
+        // Stop listening when the screen is hidden to save resources
+        unregisterReceiver(batteryInfoReceiver)
     }
 }
