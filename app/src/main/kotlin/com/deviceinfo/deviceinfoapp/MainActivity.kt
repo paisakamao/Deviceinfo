@@ -18,7 +18,6 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our final, correct helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
         val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
@@ -29,33 +28,13 @@ class MainActivity : AppCompatActivity() {
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // --- Populate the full dashboard list with all sections ---
-
-        // RAM Section
+        // Populate the full dashboard list
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Used RAM", deviceInfoHelper.getUsedRam()))
-        
-        // Storage Section
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        
-        // CPU Section
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
-        deviceInfoList.add(DeviceInfo("Number of Cores", cpuInfoHelper.getNumberOfCores()))
-
-        // Display Section
-        deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
-        deviceInfoList.add(DeviceInfo("Refresh Rate", displayInfoHelper.getRefreshRate()))
-        
-        // System Section
         deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
-        deviceInfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
-
-        // Device & OS Section
-        deviceInfoList.add(DeviceInfo("Device Model", deviceInfoHelper.getDeviceModel()))
-        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
-
-        // --- Clickable Summary Items ---
-        // These are intentionally placed at the end to be easy to find
+        
+        // Clickable Summary Items
         deviceInfoList.add(DeviceInfo("Battery Details", batteryInfoHelper.getBatteryPercentageForDashboard()))
         deviceInfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
         deviceInfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
@@ -64,15 +43,9 @@ class MainActivity : AppCompatActivity() {
         
         adapter.onItemClick = { deviceInfo ->
             when (deviceInfo.label) {
-                "Sensor Details" -> {
-                    startActivity(Intent(this, SensorListActivity::class.java))
-                }
-                "Application Details" -> {
-                    startActivity(Intent(this, AppListActivity::class.java))
-                }
-                "Battery Details" -> {
-                    startActivity(Intent(this, BatteryDetailActivity::class.java))
-                }
+                "Sensor Details" -> startActivity(Intent(this, SensorListActivity::class.java))
+                "Application Details" -> startActivity(Intent(this, AppListActivity::class.java))
+                "Battery Details" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
             }
         }
         
