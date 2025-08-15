@@ -50,12 +50,42 @@ class BatteryInfoHelper(private val context: Context) {
         return "${(level * 100.0f / scale).toInt()}%"
     }
 
-    private fun getBatteryStatus(status: Int): String { /* ... (code from your provided snippet) ... */ }
-    private fun getBatteryHealth(intent: Intent): String { /* ... (code from your provided snippet) ... */ }
-    private fun getChargingSource(intent: Intent): String { /* ... (code from your provided snippet) ... */ }
+    private fun getBatteryStatus(status: Int): String {
+        return when (status) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
+            BatteryManager.BATTERY_STATUS_FULL -> "Full"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "Not Charging"
+            else -> "Unknown"
+        }
+    }
+
+    private fun getBatteryHealth(intent: Intent): String {
+        return when (intent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)) {
+            BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
+            BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over Voltage"
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheat"
+            BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "Failure"
+            else -> "Unknown"
+        }
+    }
+
+    private fun getChargingSource(intent: Intent): String {
+        return when (intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "AC Charger"
+            BatteryManager.BATTERY_PLUGGED_USB -> "USB Port"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "Wireless Charger"
+            0 -> "On Battery"
+            else -> "Unknown"
+        }
+    }
+
     private fun getBatteryTechnology(intent: Intent): String {
         return intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "N/A"
     }
+
     private fun getBatteryTemperature(intent: Intent): String {
         val t = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
         if (t == -1) return "N/A"
@@ -121,9 +151,34 @@ class BatteryInfoHelper(private val context: Context) {
         return String.format("%.2f W", watts)
     }
 
-    private fun getChargeTimeRemaining(status: Int): String { /* ... (code from your provided snippet) ... */ }
-    private fun getDesignCapacity(): String { /* ... (code from your provided snippet) ... */ }
-    private fun formatDuration(millis: Long): String { /* ... (code from your provided snippet) ... */ }
+    private fun getChargeTimeRemaining(status: Int): String {
+        if (status == BatteryManager.BATTERY_STATUS_DISCHARGING) return "Discharging"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val timeInMillis = batteryManager.computeChargeTimeRemaining()
+            if (timeInMillis > 0) return formatDuration(timeInMillis)
+        }
+        return "Calculating..."
+    }
+
+    private fun getDesignCapacity(): String {
+        return try {
+            val powerProfile = Class.forName("com.android.internal.os.PowerProfile")
+                .getConstructor(Context::class.java)
+                .newInstance(context)
+            val capacity = powerProfile.javaClass
+                .getMethod("getBatteryCapacity")
+                .invoke(powerProfile) as Double
+            if (capacity > 0) "${capacity.toInt()} mAh" else "N/A"
+        } catch (_: Throwable) {
+            "N/A"
+        }
+    }
+
+    private fun formatDuration(millis: Long): String {
+        val hours = TimeUnit.MILLISECONDS.toHours(millis)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
+        return String.format("%d hr %d min remaining", hours, minutes)
+    }
 
     private fun readFirstExistingSysfsLong(vararg paths: String): Long? {
         for (p in paths) {
