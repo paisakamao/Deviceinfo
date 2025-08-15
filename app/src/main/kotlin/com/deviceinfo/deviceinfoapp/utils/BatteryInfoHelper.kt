@@ -17,7 +17,7 @@ class BatteryInfoHelper(private val context: Context) {
         return context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
-    // --- NEW MASTER FUNCTION ---
+    // --- MASTER FUNCTION ---
     fun getBatteryDetailsList(): List<DeviceInfo> {
         val details = mutableListOf<DeviceInfo>()
         val intent = getBatteryStatusIntent() ?: return emptyList()
@@ -31,7 +31,7 @@ class BatteryInfoHelper(private val context: Context) {
         details.add(DeviceInfo("Temperature", getBatteryTemperature(intent)))
         details.add(DeviceInfo("Voltage", getBatteryVoltage(intent)))
         details.add(DeviceInfo("Current (Real-time)", getCurrentNow()))
-        details.add(DeviceInfo("Power (Real-time)", getPowerNow(intent)))
+        details.add(DeviceInfo("Power (Real-time)", getPowerNow()))
         details.add(DeviceInfo("Time to Charge/Discharge", getChargeTimeRemaining(status)))
         details.add(DeviceInfo("Capacity (Design)", getTotalCapacity()))
 
@@ -40,14 +40,12 @@ class BatteryInfoHelper(private val context: Context) {
 
     // --- Individual Helper Functions (Corrected and Improved) ---
 
-    // Public function for the main screen
     fun getBatteryPercentage(intent: Intent? = getBatteryStatusIntent()): String {
         intent ?: return "N/A"
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
         val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
         if (level == -1 || scale == -1) return "N/A"
-        val percentage = (level * 100.0f / scale).toInt()
-        return "$percentage%"
+        return "${(level * 100.0f / scale).toInt()}%"
     }
 
     private fun getBatteryStatus(status: Int): String {
@@ -61,6 +59,7 @@ class BatteryInfoHelper(private val context: Context) {
     }
 
     private fun getBatteryHealth(intent: Intent): String {
+        // ... (This function is already correct, keeping it for completeness)
         val health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)
         return when (health) {
             BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
@@ -74,6 +73,7 @@ class BatteryInfoHelper(private val context: Context) {
     }
 
     private fun getChargingSource(intent: Intent): String {
+        // ... (This function is already correct)
         val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
         return when (plugged) {
             BatteryManager.BATTERY_PLUGGED_AC -> "AC Charger"
@@ -91,39 +91,56 @@ class BatteryInfoHelper(private val context: Context) {
     private fun getBatteryTemperature(intent: Intent): String {
         val temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
         if (temperature == -1) return "N/A"
-        val tempCelsius = temperature / 10.0f
-        return "${tempCelsius.toInt()} °C" // Corrected to whole number
+        return "${(temperature / 10.0f).toInt()} °C"
     }
 
     private fun getBatteryVoltage(intent: Intent): String {
         val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
-        if (voltage == -1) return "N/A"
-        return "$voltage mV"
+        return if (voltage == -1) "N/A" else "$voltage mV"
     }
 
     private fun getCurrentNow(): String {
-        val currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        if (currentMicroamps == 0L || currentMicroamps == Long.MIN_VALUE) return "N/A"
-        // Convert from microamps to milliamps
+        // 1. Try the real-time current first.
+        var currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+
+        // 2. If real-time is 0, try the average current as a fallback.
+        if (currentMicroamps == 0L) {
+            currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_AVERAGE)
+        }
+
+        // 3. If both are invalid, report N/A.
+        if (currentMicroamps == 0L || currentMicroamps == Long.MIN_VALUE) {
+            return "N/A"
+        }
+
         val currentMilliamps = currentMicroamps / 1000
-        return "$currentMilliamps mA" // Corrected to provide real value
+        return "$currentMilliamps mA"
     }
     
-    private fun getPowerNow(intent: Intent): String {
-        val currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        val voltageMilliVolts = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
+    private fun getPowerNow(): String {
+        val intent = getBatteryStatusIntent() ?: return "N/A"
+        val voltageMilliVolts = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1).toDouble()
+        val currentString = getCurrentNow()
 
-        if (currentMicroamps == 0L || currentMicroamps == Long.MIN_VALUE || voltageMilliVolts == -1) return "N/A"
+        if (currentString == "N/A" || voltageMilliVolts == -1.0) {
+            return "N/A"
+        }
+
+        // Extract the number from the current string (e.g., "-716 mA" -> -716.0)
+        val currentMilliAmps = currentString.split(" ")[0].toDoubleOrNull() ?: return "N/A"
 
         // Power (Watts) = Voltage (Volts) * Current (Amps)
-        val powerMicroWatts = voltageMilliVolts * currentMicroamps
-        val powerWatts = powerMicroWatts / 1_000_000_000.0 // Corrected calculation to Watts
-        return "%.2f W".format(powerWatts) // Corrected to Watts with 2 decimal places
+        val powerWatts = (voltageMilliVolts / 1000.0) * (currentMilliAmps / 1000.0)
+        
+        // Don't show -0.00 W
+        if (powerWatts > -0.01 && powerWatts < 0.01) return "0.00 W"
+
+        return "%.2f W".format(powerWatts)
     }
 
     private fun getChargeTimeRemaining(status: Int): String {
         if (status == BatteryManager.BATTERY_STATUS_DISCHARGING) {
-            return "Discharging" // Corrected to be user-friendly
+            return "Discharging"
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val timeInMillis = batteryManager.computeChargeTimeRemaining()
@@ -131,19 +148,18 @@ class BatteryInfoHelper(private val context: Context) {
                 return formatDuration(timeInMillis)
             }
         }
-        return "Calculating..." // A better default when charging
+        return "Calculating..."
     }
 
     private fun getTotalCapacity(): String {
-        // This gets the battery's design capacity in microampere-hours (µAh)
         val capacityMicroAh = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-        val totalCapacity = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        val capacityPercent = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
 
-        if (capacityMicroAh != Long.MIN_VALUE && totalCapacity != Long.MIN_VALUE) {
-             val designCapacity = (capacityMicroAh / (totalCapacity/100.0)).toLong()
-            return "${designCapacity/1000} mAh"
+        if (capacityMicroAh != Long.MIN_VALUE && capacityPercent > 0) {
+            val designCapacity = (capacityMicroAh / (capacityPercent / 100.0))
+            return "${designCapacity.toLong() / 1000} mAh"
         }
-        return "N/A" // Fallback if property is not available
+        return "N/A"
     }
     
     private fun formatDuration(millis: Long): String {
