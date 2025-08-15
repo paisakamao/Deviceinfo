@@ -1,6 +1,10 @@
 package com.deviceinfo.deviceinfoapp
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,6 +15,24 @@ import com.deviceinfo.deviceinfoapp.utils.*
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var adapter: DeviceInfoAdapter
+    private val deviceInfoList = mutableListOf<DeviceInfo>()
+
+    // Battery receiver for live updates
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent == null) return
+            val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+
+            // Find the battery item and update it
+            val index = deviceInfoList.indexOfFirst { it.label == "Battery Level" }
+            if (index != -1) {
+                deviceInfoList[index] = DeviceInfo("Battery Level", "$level%")
+                adapter.notifyItemChanged(index)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -18,43 +40,45 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our helpers
+        // Create helper instances
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this) // Changed: using the same helper as detail screen
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
         val appInfoHelper = AppInfoHelper(this)
         val systemInfoHelper = SystemInfoHelper()
 
-        val deviceInfoList = mutableListOf<DeviceInfo>()
-
-        // Populate the full summary list
+        // Fill initial data
+        deviceInfoList.clear()
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentageForDashboard())) // Updated
+        deviceInfoList.add(DeviceInfo("Battery Level", "Loading...")) // Placeholder, will be updated by receiver
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
         deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
         deviceInfoList.add(DeviceInfo("All Apps", appInfoHelper.getAllAppsDetails().size.toString()))
 
-        val adapter = DeviceInfoAdapter(deviceInfoList)
+        adapter = DeviceInfoAdapter(deviceInfoList)
 
         adapter.onItemClick = { deviceInfo ->
             when (deviceInfo.label) {
-                "Total Sensors" -> {
-                    startActivity(Intent(this, SensorListActivity::class.java))
-                }
-                "All Apps" -> {
-                    startActivity(Intent(this, AppListActivity::class.java))
-                }
-                "Battery Level" -> {
-                    startActivity(Intent(this, BatteryDetailActivity::class.java))
-                }
+                "Total Sensors" -> startActivity(Intent(this, SensorListActivity::class.java))
+                "All Apps" -> startActivity(Intent(this, AppListActivity::class.java))
+                "Battery Level" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
             }
         }
 
         recyclerView.adapter = adapter
+    }
+
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+    }
+
+    override fun onPause() {
+        super.onPause()
+        unregisterReceiver(batteryReceiver)
     }
 }
