@@ -18,8 +18,9 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this)
+        val batterySummaryHelper = BatterySummaryHelper(this) // Use the new summary helper
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
@@ -31,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         // Populate the full summary list
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentage()))
+        deviceInfoList.add(DeviceInfo("Battery Level", batterySummaryHelper.getBatteryPercentage())) // Call the new helper
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
@@ -48,6 +49,7 @@ class MainActivity : AppCompatActivity() {
                 "All Apps" -> {
                     startActivity(Intent(this, AppListActivity::class.java))
                 }
+                // Update this to launch the BatteryDetailActivity
                 "Battery Level" -> {
                     startActivity(Intent(this, BatteryDetailActivity::class.java))
                 }
