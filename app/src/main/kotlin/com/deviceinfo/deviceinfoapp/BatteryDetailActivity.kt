@@ -24,15 +24,13 @@ class BatteryDetailActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val updateIntervalMs = 1000L
 
+    // Declare the runnable with lateinit
+    private lateinit var realTimeRunnable: Runnable
+
     private val batteryEventReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateSlowData()
         }
-    }
-
-    private val realTimeRunnable: Runnable = Runnable {
-        updateFastData()
-        handler.postDelayed(realTimeRunnable, updateIntervalMs)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +44,12 @@ class BatteryDetailActivity : AppCompatActivity() {
         batteryInfoHelper = BatteryInfoHelper(this)
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
+
+        // Initialize the runnable here, inside onCreate, where it is safe
+        realTimeRunnable = Runnable {
+            updateFastData()
+            handler.postDelayed(realTimeRunnable, updateIntervalMs)
+        }
     }
 
     override fun onResume() {
@@ -66,6 +70,7 @@ class BatteryDetailActivity : AppCompatActivity() {
         
         if (batteryDetailsList.isEmpty()) {
             batteryDetailsList.addAll(slowDetails)
+            // Add placeholders for fast data
             batteryDetailsList.add(DeviceInfo("Voltage", "..."))
             batteryDetailsList.add(DeviceInfo("Current (Real-time)", "..."))
             batteryDetailsList.add(DeviceInfo("Power (Real-time)", "..."))
