@@ -1,5 +1,7 @@
 package com.deviceinfo.deviceinfoapp
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
@@ -17,39 +19,41 @@ class BatteryDetailActivity : AppCompatActivity() {
         binding = ActivityBatteryDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        supportActionBar?.title = "Battery Details"
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        // Setup initial battery status
-        updateBatteryStatus()
-
-        // Load the BatteryFragment into the container
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, BatteryFragment())
-                .commit()
-        }
-
-        // Register for battery updates
+        setupActionBar()
+        setupBatteryFragment()
         setupBatteryMonitoring()
     }
 
+    private fun setupActionBar() {
+        supportActionBar?.apply {
+            title = "Battery Details"
+            subtitle = "Loading..."
+            setDisplayHomeAsUpEnabled(true)
+        }
+    }
+
+    private fun setupBatteryFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, BatteryFragment())
+            .commit()
+    }
+
     private fun setupBatteryMonitoring() {
+        // Get initial battery status
+        updateBatteryStatus()
+
+        // Register for ongoing updates
         batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 intent?.let { updateBatteryStatus(it) }
             }
         }
 
-        val filter = IntentFilter().apply {
+        registerReceiver(batteryReceiver, IntentFilter().apply {
             addAction(Intent.ACTION_BATTERY_CHANGED)
-            addAction(Intent.ACTION_BATTERY_LOW)
-            addAction(Intent.ACTION_BATTERY_OKAY)
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
-        }
-
-        registerReceiver(batteryReceiver, filter)
+        })
     }
 
     private fun updateBatteryStatus(intent: Intent? = null) {
@@ -68,18 +72,16 @@ class BatteryDetailActivity : AppCompatActivity() {
                 val isCharging = status == BatteryManager.BATTERY_STATUS_CHARGING || 
                                 status == BatteryManager.BATTERY_STATUS_FULL
                 
-                // Update action bar subtitle with current status
-                supportActionBar?.subtitle = if (isCharging) {
-                    "$percentage% (Charging)"
-                } else {
-                    "$percentage% (Discharging)"
+                supportActionBar?.subtitle = buildString {
+                    append("$percentage%")
+                    append(if (isCharging) " (Charging)" else " (Discharging)")
                 }
             }
         }
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+        finish()
         return true
     }
 
@@ -88,7 +90,7 @@ class BatteryDetailActivity : AppCompatActivity() {
         batteryReceiver?.let {
             try {
                 unregisterReceiver(it)
-            } catch (e: Exception) {
+            } catch (e: IllegalArgumentException) {
                 // Receiver was not registered
             }
         }
