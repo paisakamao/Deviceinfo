@@ -8,7 +8,6 @@ import android.os.Build
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
 import java.io.File
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 class BatteryInfoHelper(private val context: Context) {
 
@@ -25,8 +24,8 @@ class BatteryInfoHelper(private val context: Context) {
             DeviceInfo("Power Source", getChargingSource(intent)),
             DeviceInfo("Technology", getBatteryTechnology(intent)),
             DeviceInfo("Temperature", getBatteryTemperature(intent)),
-            DeviceInfo("Voltage", getBatteryVoltageFresh()), // Use fresh voltage for power calculation
-            DeviceInfo("Current (Real-time)", getCurrentNowFresh(status)), // Pass status for correct sign
+            DeviceInfo("Voltage", getBatteryVoltageFresh()),
+            DeviceInfo("Current (Real-time)", getCurrentNowFresh(status)),
             DeviceInfo("Power (Real-time)", getPowerNowFresh(status)),
             DeviceInfo("Time to Charge/Discharge", getChargeTimeRemaining(status)),
             DeviceInfo("Capacity (Design)", getDesignCapacity())
@@ -38,47 +37,58 @@ class BatteryInfoHelper(private val context: Context) {
         return getBatteryPercentage(intent)
     }
 
-    // --- Core Real-time Function ---
-    private fun getCurrentNowFresh(status: Int): String {
-        // List of all known paths where the real-time current is stored.
-        val pathsToTry = arrayOf(
-            "/sys/class/power_supply/battery/current_now",
-            "/sys/class/power_supply/bms/current_now", // Common on newer devices (Battery Management System)
-            "/sys/class/power_supply/main/current_now",
-            "/sys/class/power_supply/battery/batt_current"
-        )
-
-        for (path in pathsToTry) {
-            try {
-                val file = File(path)
-                if (file.exists()) {
-                    val currentMicroamps = file.readText().trim().toLong()
-                    if (currentMicroamps != 0L) {
-                        var milliamps = currentMicroamps / 1000
-                        // IMPORTANT: The system file often reports a positive value even when discharging.
-                        // We use the battery status to make sure it's negative.
-                        if (status == BatteryManager.BATTERY_STATUS_DISCHARGING && milliamps > 0) {
-                            milliamps *= -1
-                        }
-                        return "$milliamps mA"
-                    }
-                }
-            } catch (e: Exception) {
-                // This path failed, try the next one.
-            }
-        }
-
-        // Fallback to the (often unreliable) Android API if no file works.
-        val apiCurrent = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        if (apiCurrent != 0L && apiCurrent != Long.MIN_VALUE) {
-            return "${apiCurrent / 1000} mA"
-        }
-        
-        return "N/A"
+    private fun getBatteryPercentage(intent: Intent?): String {
+        intent ?: return "N/A"
+        val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+        val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+        if (level == -1 || scale == -1) return "N/A"
+        return "${(level * 100.0f / scale).toInt()}%"
     }
 
-    // --- Other Helpers ---
-    
+    private fun getBatteryStatus(status: Int): String {
+        return when (status) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
+            BatteryManager.BATTERY_STATUS_FULL -> "Full"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "Not Charging"
+            else -> "Unknown"
+        }
+    }
+
+    private fun getBatteryHealth(intent: Intent): String {
+        val health = intent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)
+        return when (health) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheating"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over Voltage"
+            BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "Failure"
+            BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
+            else -> "Unknown"
+        }
+    }
+
+    private fun getChargingSource(intent: Intent): String {
+        val plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1)
+        return when (plugged) {
+            BatteryManager.BATTERY_PLUGGED_AC -> "AC Charger"
+            BatteryManager.BATTERY_PLUGGED_USB -> "USB Port"
+            BatteryManager.BATTERY_PLUGGED_WIRELESS -> "Wireless Charger"
+            0 -> "On Battery"
+            else -> "Unknown"
+        }
+    }
+
+    private fun getBatteryTechnology(intent: Intent): String {
+        return intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "N/A"
+    }
+
+    private fun getBatteryTemperature(intent: Intent): String {
+        val temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
+        if (temperature == -1) return "N/A"
+        return "${(temperature / 10.0f).toInt()} °C"
+    }
+
     private fun getBatteryVoltageFresh(): String {
         try {
             val file = File("/sys/class/power_supply/battery/voltage_now")
@@ -88,25 +98,58 @@ class BatteryInfoHelper(private val context: Context) {
             }
         } catch (e: Exception) { /* Fall through */ }
         
-        // Fallback for voltage
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val voltage = intent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
         return if (voltage != -1) "$voltage mV" else "N/A"
+    }
+
+    private fun getCurrentNowFresh(status: Int): String {
+        val pathsToTry = arrayOf(
+            "/sys/class/power_supply/battery/current_now",
+            "/sys/class/power_supply/bms/current_now",
+            "/sys/class/power_supply/main/current_now",
+            "/sys/class/power_supply/battery/batt_current"
+        )
+        for (path in pathsToTry) {
+            try {
+                val file = File(path)
+                if (file.exists()) {
+                    val currentMicroamps = file.readText().trim().toLong()
+                    if (currentMicroamps != 0L) {
+                        var milliamps = currentMicroamps / 1000
+                        if (status == BatteryManager.BATTERY_STATUS_DISCHARGING && milliamps > 0) {
+                            milliamps *= -1
+                        }
+                        return "$milliamps mA"
+                    }
+                }
+            } catch (e: Exception) { /* Try next path */ }
+        }
+        val apiCurrent = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        if (apiCurrent != 0L && apiCurrent != Long.MIN_VALUE) {
+            return "${apiCurrent / 1000} mA"
+        }
+        return "N/A"
     }
     
     private fun getPowerNowFresh(status: Int): String {
         val voltageString = getBatteryVoltageFresh()
         val currentString = getCurrentNowFresh(status)
-
         if (voltageString == "N/A" || currentString == "N/A") return "N/A"
-
         val voltageMilliVolts = voltageString.split(" ")[0].toDoubleOrNull()
         val currentMilliAmps = currentString.split(" ")[0].toDoubleOrNull()
-
         if (voltageMilliVolts == null || currentMilliAmps == null) return "N/A"
-
         val powerWatts = (voltageMilliVolts / 1000.0) * (currentMilliAmps / 1000.0)
         return "%.2f W".format(powerWatts)
+    }
+
+    private fun getChargeTimeRemaining(status: Int): String {
+        if (status == BatteryManager.BATTERY_STATUS_DISCHARGING) return "Discharging"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val timeInMillis = batteryManager.computeChargeTimeRemaining()
+            if (timeInMillis > 0) return formatDuration(timeInMillis)
+        }
+        return "Calculating..."
     }
 
     private fun getDesignCapacity(): String {
@@ -118,14 +161,10 @@ class BatteryInfoHelper(private val context: Context) {
         } catch (e: Exception) { /* Fall through */ }
         return "N/A"
     }
-
-    // --- Basic Intent-based functions ---
-    private fun getBatteryPercentage(intent: Intent?): String { /* ... unchanged ... */ }
-    private fun getBatteryStatus(status: Int): String { /* ... unchanged ... */ }
-    private fun getBatteryHealth(intent: Intent): String { /* ... unchanged ... */ }
-    private fun getChargingSource(intent: Intent): String { /* ... unchanged ... */ }
-    private fun getBatteryTechnology(intent: Intent): String { /* ... unchanged ... */ }
-    private fun getBatteryTemperature(intent: Intent): String { /* ... unchanged ... */ }
-    private fun getChargeTimeRemaining(status: Int): String { /* ... unchanged ... */ }
-    private fun formatDuration(millis: Long): String { /* ... unchanged ... */ }
+    
+    private fun formatDuration(millis: Long): String {
+        val hours = TimeUnit.MILLISECONDS.toHours(millis)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
+        return String.format("%d hr %d min remaining", hours, minutes)
+    }
 }
