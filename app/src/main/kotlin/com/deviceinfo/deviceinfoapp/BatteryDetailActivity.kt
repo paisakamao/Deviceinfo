@@ -24,12 +24,15 @@ class BatteryDetailActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val updateIntervalMs = 1000L // 1 second
 
+    // Broadcast: updates when system fires battery change (level, status, voltage, etc.)
     private val batteryEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            // Refresh full set from sticky intent snapshot
             updateBatteryInfo(fullRefresh = true)
         }
     }
 
+    // Timer: for smooth "real-time" current/power updates (some OEMs don’t broadcast every second)
     private val realTimeRunnable = object : Runnable {
         override fun run() {
             updateBatteryInfo(fullRefresh = false) // only update the real-time rows
@@ -44,9 +47,13 @@ class BatteryDetailActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.batteryDetailRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
+
         batteryInfoHelper = BatteryInfoHelper(this)
+
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
+
+        // Seed list initially
         updateBatteryInfo(fullRefresh = true)
     }
 
@@ -66,13 +73,17 @@ class BatteryDetailActivity : AppCompatActivity() {
 
     private fun updateBatteryInfo(fullRefresh: Boolean) {
         if (fullRefresh || batteryDetailsList.isEmpty()) {
+            // Rebuild the full list (includes Current/Power with latest snapshot)
             val newDetails = batteryInfoHelper.getBatteryDetailsList()
             batteryDetailsList.clear()
             batteryDetailsList.addAll(newDetails)
             adapter.notifyDataSetChanged()
         } else {
+            // Only update the two real-time rows for smooth 1s refresh
             val currentIdx = batteryDetailsList.indexOfFirst { it.label == "Current (Real-time)" }
             val powerIdx   = batteryDetailsList.indexOfFirst { it.label == "Power (Real-time)" }
+
+            // We still need intent for voltage in power calculation, so fetch it
             val intent = batteryInfoHelper.getBatteryStatusIntent()
 
             if (currentIdx != -1) {
@@ -90,7 +101,9 @@ class BatteryDetailActivity : AppCompatActivity() {
                 val newPower = if (mA != null && mV > 0) {
                     val watts = (mA / 1000.0) * (mV / 1000.0)
                     if (kotlin.math.abs(watts) < 0.005) "0.00 W" else String.format("%.2f W", watts)
-                } else { "N/A" }
+                } else {
+                    "N/A"
+                }
                 batteryDetailsList[powerIdx] = DeviceInfo("Power (Real-time)", newPower)
                 adapter.notifyItemChanged(powerIdx)
             }
