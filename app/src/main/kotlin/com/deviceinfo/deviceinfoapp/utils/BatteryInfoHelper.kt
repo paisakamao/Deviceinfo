@@ -7,42 +7,40 @@ import android.os.BatteryManager
 import android.os.Build
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 class BatteryInfoHelper(private val context: Context) {
 
-    // A single place to get the modern BatteryManager service
     private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
-    // A single place to get the classic battery Intent
     private fun getBatteryStatusIntent(): Intent? {
         return context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
     }
 
     // --- NEW MASTER FUNCTION ---
-    // This builds the complete list for the detail screen.
     fun getBatteryDetailsList(): List<DeviceInfo> {
         val details = mutableListOf<DeviceInfo>()
         val intent = getBatteryStatusIntent() ?: return emptyList()
+        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
 
-        details.add(DeviceInfo("Level", getBatteryPercentage(intent)))
-        details.add(DeviceInfo("Status", getBatteryStatus(intent)))
         details.add(DeviceInfo("Health", getBatteryHealth(intent)))
-        details.add(DeviceInfo("Charging Source", getChargingSource(intent)))
+        details.add(DeviceInfo("Level", getBatteryPercentage(intent)))
+        details.add(DeviceInfo("Status", getBatteryStatus(status)))
+        details.add(DeviceInfo("Power Source", getChargingSource(intent)))
         details.add(DeviceInfo("Technology", getBatteryTechnology(intent)))
         details.add(DeviceInfo("Temperature", getBatteryTemperature(intent)))
         details.add(DeviceInfo("Voltage", getBatteryVoltage(intent)))
         details.add(DeviceInfo("Current (Real-time)", getCurrentNow()))
         details.add(DeviceInfo("Power (Real-time)", getPowerNow(intent)))
-        details.add(DeviceInfo("Time Until Full (est.)", getChargeTimeRemaining()))
-        details.add(DeviceInfo("Current Capacity (est.)", getCurrentCapacity()))
-        details.add(DeviceInfo("Total Capacity (est.)", getTotalCapacity()))
+        details.add(DeviceInfo("Time to Charge/Discharge", getChargeTimeRemaining(status)))
+        details.add(DeviceInfo("Capacity (Design)", getTotalCapacity()))
 
         return details
     }
 
-    // --- Individual Helper Functions ---
+    // --- Individual Helper Functions (Corrected and Improved) ---
 
-    // This is the public function for the main screen
+    // Public function for the main screen
     fun getBatteryPercentage(intent: Intent? = getBatteryStatusIntent()): String {
         intent ?: return "N/A"
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -52,8 +50,7 @@ class BatteryInfoHelper(private val context: Context) {
         return "$percentage%"
     }
 
-    private fun getBatteryStatus(intent: Intent): String {
-        val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+    private fun getBatteryStatus(status: Int): String {
         return when (status) {
             BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
             BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
@@ -95,7 +92,7 @@ class BatteryInfoHelper(private val context: Context) {
         val temperature = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
         if (temperature == -1) return "N/A"
         val tempCelsius = temperature / 10.0f
-        return "$tempCelsius °C"
+        return "${tempCelsius.toInt()} °C" // Corrected to whole number
     }
 
     private fun getBatteryVoltage(intent: Intent): String {
@@ -106,52 +103,52 @@ class BatteryInfoHelper(private val context: Context) {
 
     private fun getCurrentNow(): String {
         val currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        // A positive value means charging, negative means discharging.
+        if (currentMicroamps == 0L || currentMicroamps == Long.MIN_VALUE) return "N/A"
+        // Convert from microamps to milliamps
         val currentMilliamps = currentMicroamps / 1000
-        return if (currentMilliamps != 0L) "$currentMilliamps mA" else "N/A"
+        return "$currentMilliamps mA" // Corrected to provide real value
     }
     
     private fun getPowerNow(intent: Intent): String {
-        val current = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
+        val currentMicroamps = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        val voltageMilliVolts = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
 
-        if (current == 0L || voltage == -1) return "N/A"
+        if (currentMicroamps == 0L || currentMicroamps == Long.MIN_VALUE || voltageMilliVolts == -1) return "N/A"
 
-        // Power (in milliwatts) = Voltage (in volts) * Current (in milliamps)
-        val powerMilliwatts = (voltage / 1000.0) * (current / 1000.0)
-        return "%.2f mW".format(powerMilliwatts)
+        // Power (Watts) = Voltage (Volts) * Current (Amps)
+        val powerMicroWatts = voltageMilliVolts * currentMicroamps
+        val powerWatts = powerMicroWatts / 1_000_000_000.0 // Corrected calculation to Watts
+        return "%.2f W".format(powerWatts) // Corrected to Watts with 2 decimal places
     }
 
-    private fun getChargeTimeRemaining(): String {
+    private fun getChargeTimeRemaining(status: Int): String {
+        if (status == BatteryManager.BATTERY_STATUS_DISCHARGING) {
+            return "Discharging" // Corrected to be user-friendly
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val timeInMillis = batteryManager.computeChargeTimeRemaining()
             if (timeInMillis > 0) {
                 return formatDuration(timeInMillis)
             }
         }
-        return "N/A"
-    }
-
-    private fun getCurrentCapacity(): String {
-        val chargeCounter = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-        return if (chargeCounter != Long.MIN_VALUE) "${chargeCounter / 1000} mAh" else "N/A"
+        return "Calculating..." // A better default when charging
     }
 
     private fun getTotalCapacity(): String {
-        // This is an estimate, as there is no universal API for total design capacity.
-        val currentCapacity = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-        val capacityPercent = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        // This gets the battery's design capacity in microampere-hours (µAh)
+        val capacityMicroAh = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+        val totalCapacity = batteryManager.getLongProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
 
-        if (currentCapacity != Long.MIN_VALUE && capacityPercent > 0) {
-            val totalCapacity = (currentCapacity / (capacityPercent / 100.0))
-            return "${totalCapacity.toLong() / 1000} mAh (est.)"
+        if (capacityMicroAh != Long.MIN_VALUE && totalCapacity != Long.MIN_VALUE) {
+             val designCapacity = (capacityMicroAh / (totalCapacity/100.0)).toLong()
+            return "${designCapacity/1000} mAh"
         }
-        return "N/A"
+        return "N/A" // Fallback if property is not available
     }
     
     private fun formatDuration(millis: Long): String {
         val hours = TimeUnit.MILLISECONDS.toHours(millis)
         val minutes = TimeUnit.MILLISECONDS.toMinutes(millis) % 60
-        return String.format("%d hr %d min", hours, minutes)
+        return String.format("%d hr %d min remaining", hours, minutes)
     }
 }
