@@ -22,14 +22,18 @@ class BatteryDetailActivity : AppCompatActivity() {
     private lateinit var adapter: DeviceInfoAdapter
 
     private val handler = Handler(Looper.getMainLooper())
-    private val updateIntervalMs = 1000L
+    private val updateIntervalMs = 1000L // 1 second
 
-    // Declare the runnable with lateinit
-    private lateinit var realTimeRunnable: Runnable
-
-    private val batteryEventReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val batteryEventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            updateSlowData()
+            updateBatteryInfo(fullRefresh = true)
+        }
+    }
+
+    private val realTimeRunnable = object : Runnable {
+        override fun run() {
+            updateBatteryInfo(fullRefresh = false)
+            handler.postDelayed(this, updateIntervalMs)
         }
     }
 
@@ -40,59 +44,54 @@ class BatteryDetailActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.batteryDetailRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        
         batteryInfoHelper = BatteryInfoHelper(this)
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
-
-        // Initialize the runnable here, inside onCreate, where it is safe
-        realTimeRunnable = Runnable {
-            updateFastData()
-            handler.postDelayed(realTimeRunnable, updateIntervalMs)
-        }
+        updateBatteryInfo(fullRefresh = true)
     }
 
     override fun onResume() {
         super.onResume()
         registerReceiver(batteryEventReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         handler.post(realTimeRunnable)
-        updateSlowData()
     }
 
     override fun onPause() {
         super.onPause()
-        unregisterReceiver(batteryEventReceiver)
+        try {
+            unregisterReceiver(batteryEventReceiver)
+        } catch (_: IllegalArgumentException) { /* ignore */ }
         handler.removeCallbacks(realTimeRunnable)
     }
 
-    private fun updateSlowData() {
-        val slowDetails = batteryInfoHelper.getSlowUpdateDetails()
-        
-        if (batteryDetailsList.isEmpty()) {
-            batteryDetailsList.addAll(slowDetails)
-            // Add placeholders for fast data
-            batteryDetailsList.add(DeviceInfo("Voltage", "..."))
-            batteryDetailsList.add(DeviceInfo("Current (Real-time)", "..."))
-            batteryDetailsList.add(DeviceInfo("Power (Real-time)", "..."))
+    private fun updateBatteryInfo(fullRefresh: Boolean) {
+        if (fullRefresh || batteryDetailsList.isEmpty()) {
+            val newDetails = batteryInfoHelper.getBatteryDetailsList()
+            batteryDetailsList.clear()
+            batteryDetailsList.addAll(newDetails)
             adapter.notifyDataSetChanged()
         } else {
-            slowDetails.forEach { newItem ->
-                val index = batteryDetailsList.indexOfFirst { it.label == newItem.label }
-                if (index != -1) {
-                    batteryDetailsList[index] = newItem
-                    adapter.notifyItemChanged(index)
-                }
-            }
-        }
-    }
+            val currentIdx = batteryDetailsList.indexOfFirst { it.label == "Current (Real-time)" }
+            val powerIdx = batteryDetailsList.indexOfFirst { it.label == "Power (Real-time)" }
+            val intent = batteryInfoHelper.getBatteryStatusIntent()
 
-    private fun updateFastData() {
-        val fastDetails = batteryInfoHelper.getFastUpdateDetails()
-        fastDetails.forEach { (label, value) ->
-            val index = batteryDetailsList.indexOfFirst { it.label == label }
-            if (index != -1) {
-                batteryDetailsList[index] = DeviceInfo(label, value)
-                adapter.notifyItemChanged(index)
+            if (currentIdx != -1) {
+                val newCurrent = batteryInfoHelper.getCurrentNowMilliAmps()?.let { mA ->
+                    "$mA mA"
+                } ?: "N/A"
+                batteryDetailsList[currentIdx] = DeviceInfo("Current (Real-time)", newCurrent)
+                adapter.notifyItemChanged(currentIdx)
+            }
+
+            if (powerIdx != -1 && intent != null) {
+                val mA = batteryInfoHelper.getCurrentNowMilliAmps()
+                val mV = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1)
+                val newPower = if (mA != null && mV > 0) {
+                    val watts = (mA / 1000.0) * (mV / 1000.0)
+                    if (kotlin.math.abs(watts) < 0.005) "0.00 W" else String.format("%.2f W", watts)
+                } else { "N/A" }
+                batteryDetailsList[powerIdx] = DeviceInfo("Power (Real-time)", newPower)
+                adapter.notifyItemChanged(powerIdx)
             }
         }
     }
