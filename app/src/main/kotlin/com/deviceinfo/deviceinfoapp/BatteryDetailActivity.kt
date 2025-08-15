@@ -1,10 +1,8 @@
 package com.deviceinfo.deviceinfoapp
 
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -19,13 +17,10 @@ class BatteryDetailActivity : AppCompatActivity() {
     private val batteryDetailsList = mutableListOf<DeviceInfo>()
     private lateinit var adapter: DeviceInfoAdapter
 
-    // The BroadcastReceiver that will listen for battery updates
-    private val batteryInfoReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            // When an update is received, refresh our list
-            updateBatteryInfo()
-        }
-    }
+    // A Handler is the modern Android way to create a timer
+    private val handler = Handler(Looper.getMainLooper())
+    // A Runnable is the task that the Handler will execute
+    private lateinit var updateRunnable: Runnable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,30 +32,34 @@ class BatteryDetailActivity : AppCompatActivity() {
         
         batteryInfoHelper = BatteryInfoHelper(this)
         
-        // Set up the adapter once with an empty list
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
+
+        // Define the task that will run repeatedly
+        updateRunnable = Runnable {
+            updateBatteryInfo() // Refresh the data
+            // Schedule this same task to run again after a 2-second delay
+            handler.postDelayed(updateRunnable, 2000) // 2000 milliseconds = 2 seconds
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        // Register the receiver when the activity is visible
-        registerReceiver(batteryInfoReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        // Load the initial data
-        updateBatteryInfo()
+        // When the screen becomes visible, start the real-time updates
+        handler.post(updateRunnable)
     }
 
     override fun onPause() {
         super.onPause()
-        // Unregister the receiver when the activity is no longer visible to save resources
-        unregisterReceiver(batteryInfoReceiver)
+        // When the screen is hidden, stop the updates to save battery life. This is critical.
+        handler.removeCallbacks(updateRunnable)
     }
 
     private fun updateBatteryInfo() {
-        // Get the fresh, complete list of battery details
+        // Get the fresh, complete list of battery details from our powerful helper
         val newDetails = batteryInfoHelper.getBatteryDetailsList()
         
-        // Update the list data and notify the adapter
+        // Update the list data and notify the adapter to refresh the screen
         batteryDetailsList.clear()
         batteryDetailsList.addAll(newDetails)
         adapter.notifyDataSetChanged()
