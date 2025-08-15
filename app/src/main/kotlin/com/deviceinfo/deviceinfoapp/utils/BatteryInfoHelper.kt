@@ -23,6 +23,9 @@ class BatteryInfoHelper(private val context: Context) {
         val status = intent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
         details.add(DeviceInfo("Status", getBatteryStatus(status)))
         details.add(DeviceInfo("Level", getBatteryPercentage(intent)))
+        val voltage = intent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
+        details.add(DeviceInfo("Intent Voltage", "$voltage mV"))
+
 
         // --- DIAGNOSTIC TEST 1: BatteryManager APIs ---
         details.add(DeviceInfo("--- API TEST ---", "Official Android APIs"))
@@ -47,7 +50,8 @@ class BatteryInfoHelper(private val context: Context) {
             "/sys/class/power_supply/main/current_now",
             "/sys/class/power_supply/battery/batt_current",
             "/sys/class/power_supply/battery/current_avg",
-            "/sys/class/power_supply/battery/BatteryAverageCurrent"
+            "/sys/class/power_supply/battery/BatteryAverageCurrent",
+            "/sys/class/power_supply/battery/voltage_now" // Also check voltage file
         )
         for (path in pathsToTry) {
             details.add(readSysfs(path))
@@ -72,7 +76,7 @@ class BatteryInfoHelper(private val context: Context) {
                 DeviceInfo("File: ...${path.takeLast(25)}", "Not found or unreadable")
             }
         } catch (e: Exception) {
-            DeviceInfo("File: ...${path.takeLast(25)}", "Error reading: ${e.message}")
+            DeviceInfo("File: ...${path.takeLast(25)}", "Error reading")
         }
     }
 
