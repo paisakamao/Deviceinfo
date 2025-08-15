@@ -14,7 +14,6 @@ class BatteryInfoHelper(private val context: Context) {
 
     /**
      *  Gets the "slow changing" data from the system's last broadcast.
-     *  This is efficient for things that don't change every second.
      */
     fun getSlowUpdateDetails(): List<DeviceInfo> {
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)) ?: return emptyList()
@@ -34,18 +33,20 @@ class BatteryInfoHelper(private val context: Context) {
 
     /**
      * Gets the "fast changing" data by directly querying the BatteryManager.
-     * This is the key to real-time updates.
      */
     fun getFastUpdateDetails(): Map<String, String> {
-        // Voltage must be read from the sticky intent. It doesn't have a direct property.
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val voltage = intent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
         
-        val current = (batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW) / 1000.0)
-        val powerWatts = (voltage / 1000.0) * (current / 1000.0)
+        val currentMicroAmps = try {
+            batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+        } catch (e: Exception) { 0 }
+        
+        val currentMilliAmps = currentMicroAmps / 1000.0
+        val powerWatts = (voltage / 1000.0) * (currentMilliAmps / 1000.0)
 
-        val currentString = if (current.toInt() == 0) "N/A" else "${current.toInt()} mA"
-        val powerString = if (current.toInt() == 0 || voltage <= 0) "N/A" else "%.2f W".format(powerWatts)
+        val currentString = if (currentMilliAmps.toInt() == 0) "N/A" else "${currentMilliAmps.toInt()} mA"
+        val powerString = if (currentMilliAmps.toInt() == 0 || voltage <= 0) "N/A" else "%.2f W".format(powerWatts)
         val voltageString = if (voltage <= 0) "N/A" else "$voltage mV"
 
         return mapOf(
@@ -55,7 +56,6 @@ class BatteryInfoHelper(private val context: Context) {
         )
     }
     
-    // Public version for dashboard
     fun getBatteryPercentageForDashboard(): String = getBatteryPercentage(context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED)))
 
     private fun getBatteryPercentage(intent: Intent?): String {
@@ -80,6 +80,8 @@ class BatteryInfoHelper(private val context: Context) {
         return when (intent.getIntExtra(BatteryManager.EXTRA_HEALTH, -1)) {
             BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
             BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheating"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
+            BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
             else -> "Unknown"
         }
     }
