@@ -8,6 +8,11 @@ android {
     namespace 'com.deviceinfo.deviceinfoapp'
     compileSdk 33
 
+    // ADD THIS BLOCK
+    buildFeatures {
+        viewBinding true
+    }
+
     defaultConfig {
         applicationId "com.deviceinfo.deviceinfoapp"
         minSdk 24
