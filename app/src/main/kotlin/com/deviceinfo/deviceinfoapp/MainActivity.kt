@@ -18,8 +18,9 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this)
+        val batteryInfoHelper = BatteryInfoHelper(this) // The new diagnostic helper
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
@@ -28,14 +29,16 @@ class MainActivity : AppCompatActivity() {
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // Populate the full dashboard list
+        // --- Populate the full dashboard list ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
+        deviceInfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
+        deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
         
-        // Clickable Summary Items
-        deviceInfoList.add(DeviceInfo("Battery Details", batteryInfoHelper.getBatteryPercentageForDashboard()))
+        // --- Clickable Summary Items ---
+        deviceInfoList.add(DeviceInfo("Battery Diagnostics", batteryInfoHelper.getBatteryPercentageForDashboard()))
         deviceInfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
         deviceInfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
         
@@ -45,7 +48,7 @@ class MainActivity : AppCompatActivity() {
             when (deviceInfo.label) {
                 "Sensor Details" -> startActivity(Intent(this, SensorListActivity::class.java))
                 "Application Details" -> startActivity(Intent(this, AppListActivity::class.java))
-                "Battery Details" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
+                "Battery Diagnostics" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
             }
         }
         
