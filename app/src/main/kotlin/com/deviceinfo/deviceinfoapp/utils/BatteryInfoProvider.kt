@@ -2,6 +2,7 @@ package com.deviceinfo.deviceinfoapp.utils
 
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Build
 import com.deviceinfo.deviceinfoapp.model.DeviceInfo
@@ -11,45 +12,48 @@ class BatteryInfoProvider(private val context: Context) {
 
     private val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
 
-    fun getDetailsFromIntent(intent: Intent): List<DeviceInfo> {
-        val details = mutableListOf<DeviceInfo>()
+    /**
+     *  Gets the "slow changing" data from a given broadcast Intent.
+     *  This is efficient for things that don't change every second.
+     */
+    fun getSlowUpdateDetails(intent: Intent): List<DeviceInfo> {
         val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-        
-        details.add(DeviceInfo("Health", getBatteryHealth(intent)))
-        details.add(DeviceInfo("Level", getBatteryPercentage(intent)))
-        details.add(DeviceInfo("Status", getBatteryStatus(status)))
-        details.add(DeviceInfo("Power Source", getChargingSource(intent)))
-        details.add(DeviceInfo("Technology", getBatteryTechnology(intent)))
-        details.add(DeviceInfo("Temperature", getBatteryTemperature(intent)))
-        details.add(DeviceInfo("Voltage", getBatteryVoltage(intent)))
-        details.add(DeviceInfo("Current (Real-time)", getCurrentNow(intent)))
-        details.add(DeviceInfo("Power (Real-time)", getPowerNow(intent)))
-        details.add(DeviceInfo("Time to Charge/Discharge", getChargeTimeRemaining(status)))
-        details.add(DeviceInfo("Capacity (Design)", getDesignCapacity()))
-
-        return details
+        return listOf(
+            DeviceInfo("Health", getBatteryHealth(intent)),
+            DeviceInfo("Level", getBatteryPercentage(intent)),
+            DeviceInfo("Status", getBatteryStatus(status)),
+            DeviceInfo("Power Source", getChargingSource(intent)),
+            DeviceInfo("Technology", getBatteryTechnology(intent)),
+            DeviceInfo("Temperature", getBatteryTemperature(intent)),
+            DeviceInfo("Time to Charge/Discharge", getChargeTimeRemaining(status)),
+            DeviceInfo("Capacity (Design)", getDesignCapacity())
+        )
     }
 
-    private fun getCurrentNow(intent: Intent): String {
+    /**
+     * Gets ONLY the "fast changing" data by directly querying the BatteryManager.
+     * This is the key to efficient real-time updates.
+     */
+    fun getFastUpdateDetails(): Map<String, String> {
+        val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val voltage = intent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
+        
         val currentMicroAmps = try {
             batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
         } catch (e: Exception) { 0 }
         
-        if (currentMicroAmps == 0) return "N/A"
-        return "${currentMicroAmps / 1000} mA"
-    }
-    
-    private fun getPowerNow(intent: Intent): String {
-        val currentMicroAmps = try {
-            batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
-        } catch (e: Exception) { 0 }
-        
-        val voltageMilliVolts = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
+        val currentMilliAmps = currentMicroAmps / 1000.0
+        val powerWatts = (voltage / 1000.0) * (currentMilliAmps / 1000.0)
 
-        if (currentMicroAmps == 0 || voltageMilliVolts <= 0) return "N/A"
+        val currentString = if (currentMilliAmps.toInt() == 0) "N/A" else "${currentMilliAmps.toInt()} mA"
+        val powerString = if (currentMilliAmps.toInt() == 0 || voltage <= 0) "N/A" else "%.2f W".format(powerWatts)
+        val voltageString = if (voltage <= 0) "N/A" else "$voltage mV"
 
-        val powerWatts = (voltageMilliVolts / 1000.0) * (currentMicroAmps / 1000.0)
-        return "%.2f W".format(powerWatts)
+        return mapOf(
+            "Current (Real-time)" to currentString,
+            "Power (Real-time)" to powerString,
+            "Voltage" to voltageString
+        )
     }
 
     private fun getBatteryPercentage(intent: Intent): String {
@@ -89,7 +93,7 @@ class BatteryInfoProvider(private val context: Context) {
             else -> "Unknown"
         }
     }
-    
+
     private fun getBatteryTechnology(intent: Intent): String {
         return intent.getStringExtra(BatteryManager.EXTRA_TECHNOLOGY) ?: "N/A"
     }
@@ -97,11 +101,6 @@ class BatteryInfoProvider(private val context: Context) {
     private fun getBatteryTemperature(intent: Intent): String {
         val temp = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1)
         return if (temp != -1) "${temp / 10.0f}°C" else "N/A"
-    }
-
-    private fun getBatteryVoltage(intent: Intent): String {
-        val voltage = intent.getIntExtra(BatteryManager.EXTRA_VOLTAGE, -1)
-        return if (voltage != -1) "$voltage mV" else "N/A"
     }
 
     private fun getChargeTimeRemaining(status: Int): String {
