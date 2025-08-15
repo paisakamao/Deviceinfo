@@ -20,27 +20,27 @@ class MainActivity : AppCompatActivity() {
 
         // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batterySummaryHelper = BatterySummaryHelper(this) // Use the new summary helper
+        val batteryInfoHelper = BatteryInfoHelper(this) // Changed: using the same helper as detail screen
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
         val appInfoHelper = AppInfoHelper(this)
         val systemInfoHelper = SystemInfoHelper()
-        
+
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
         // Populate the full summary list
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        deviceInfoList.add(DeviceInfo("Battery Level", batterySummaryHelper.getBatteryPercentage())) // Call the new helper
+        deviceInfoList.add(DeviceInfo("Battery Level", batteryInfoHelper.getBatteryPercentageForDashboard())) // Updated
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
         deviceInfoList.add(DeviceInfo("Screen Resolution", displayInfoHelper.getScreenResolution()))
         deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
         deviceInfoList.add(DeviceInfo("Total Sensors", sensorInfoHelper.getSensorDetailsList().size.toString()))
         deviceInfoList.add(DeviceInfo("All Apps", appInfoHelper.getAllAppsDetails().size.toString()))
-        
+
         val adapter = DeviceInfoAdapter(deviceInfoList)
-        
+
         adapter.onItemClick = { deviceInfo ->
             when (deviceInfo.label) {
                 "Total Sensors" -> {
@@ -49,13 +49,12 @@ class MainActivity : AppCompatActivity() {
                 "All Apps" -> {
                     startActivity(Intent(this, AppListActivity::class.java))
                 }
-                // Update this to launch the BatteryDetailActivity
                 "Battery Level" -> {
                     startActivity(Intent(this, BatteryDetailActivity::class.java))
                 }
             }
         }
-        
+
         recyclerView.adapter = adapter
     }
 }
