@@ -1,6 +1,8 @@
 package com.deviceinfo.deviceinfoapp
 
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,8 +20,8 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Create instances of all our non-battery helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val dashboardInfoHelper = DashboardInfoHelper(this) // The new dashboard helper
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
@@ -28,15 +30,13 @@ class MainActivity : AppCompatActivity() {
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // Populate the full dashboard list
+        // --- Populate the full dashboard list ---
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
-        deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
-        deviceInfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
         
-        // Clickable Summary Items
-        deviceInfoList.add(DeviceInfo("Battery Details", dashboardInfoHelper.getBatteryPercentage()))
+        // --- Clickable Summary Items ---
+        deviceInfoList.add(DeviceInfo("Battery Details", getBatteryPercentageForDashboard()))
         deviceInfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
         deviceInfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
         
@@ -51,5 +51,14 @@ class MainActivity : AppCompatActivity() {
         }
         
         recyclerView.adapter = adapter
+    }
+
+    // Self-contained helper function for the dashboard battery level
+    private fun getBatteryPercentageForDashboard(): String {
+        val intent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val level = intent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = intent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+        if (level == -1 || scale == -1) return "N/A"
+        return "${(level * 100.0f / scale).toInt()}%"
     }
 }
