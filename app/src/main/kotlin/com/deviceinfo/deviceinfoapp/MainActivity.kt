@@ -21,15 +21,19 @@ class MainActivity : AppCompatActivity() {
         val deviceInfoHelper = DeviceInfoHelper(this)
         val dashboardInfoHelper = DashboardInfoHelper(this) // The new dashboard helper
         val cpuInfoHelper = CpuInfoHelper()
+        val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
         val appInfoHelper = AppInfoHelper(this)
+        val systemInfoHelper = SystemInfoHelper()
         
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
-        // Populate the dashboard list
+        // Populate the full dashboard list
         deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
         deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
         deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
+        deviceInfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
+        deviceInfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
         
         // Clickable Summary Items
         deviceInfoList.add(DeviceInfo("Battery Details", dashboardInfoHelper.getBatteryPercentage()))
