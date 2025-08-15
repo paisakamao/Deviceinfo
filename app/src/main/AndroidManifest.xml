@@ -39,6 +39,11 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
+       <activity
+            android:name=".BatteryDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
     </application>
 
 </manifest>
