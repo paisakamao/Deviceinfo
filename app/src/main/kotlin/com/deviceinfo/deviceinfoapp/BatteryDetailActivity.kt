@@ -22,19 +22,15 @@ class BatteryDetailActivity : AppCompatActivity() {
     private lateinit var adapter: DeviceInfoAdapter
 
     private val handler = Handler(Looper.getMainLooper())
-    private val updateIntervalMs = 1000L // 1 second timer
+    private val updateIntervalMs = 1000L
 
-    // Receiver for slow updates (plugged in, health change, etc.)
+    // Declare with lateinit
+    private lateinit var realTimeRunnable: Runnable
+
     private val batteryEventReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             updateSlowData()
         }
-    }
-
-    // Runnable for fast updates (current, voltage, power)
-    private val realTimeRunnable: Runnable = Runnable {
-        updateFastData()
-        handler.postDelayed(realTimeRunnable, updateIntervalMs)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,21 +44,23 @@ class BatteryDetailActivity : AppCompatActivity() {
         batteryInfoHelper = BatteryInfoHelper(this)
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
+
+        // Initialize inside onCreate
+        realTimeRunnable = Runnable {
+            updateFastData()
+            handler.postDelayed(realTimeRunnable, updateIntervalMs)
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        // Register the receiver for slow updates
         registerReceiver(batteryEventReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        // Start the handler for fast updates
         handler.post(realTimeRunnable)
-        // Load initial data
         updateSlowData()
     }
 
     override fun onPause() {
         super.onPause()
-        // Stop both listeners to save battery
         unregisterReceiver(batteryEventReceiver)
         handler.removeCallbacks(realTimeRunnable)
     }
@@ -70,10 +68,9 @@ class BatteryDetailActivity : AppCompatActivity() {
     private fun updateSlowData() {
         val slowDetails = batteryInfoHelper.getSlowUpdateDetails()
         
-        // If the list is empty, populate it. Otherwise, update existing items.
         if (batteryDetailsList.isEmpty()) {
             batteryDetailsList.addAll(slowDetails)
-            // Add placeholders for fast data so the list has the right size
+            // Add placeholders for fast data on initial load
             batteryDetailsList.add(DeviceInfo("Voltage", "..."))
             batteryDetailsList.add(DeviceInfo("Current (Real-time)", "..."))
             batteryDetailsList.add(DeviceInfo("Power (Real-time)", "..."))
@@ -91,7 +88,6 @@ class BatteryDetailActivity : AppCompatActivity() {
 
     private fun updateFastData() {
         val fastDetails = batteryInfoHelper.getFastUpdateDetails()
-
         fastDetails.forEach { (label, value) ->
             val index = batteryDetailsList.indexOfFirst { it.label == label }
             if (index != -1) {
