@@ -22,22 +22,19 @@ class BatteryDetailActivity : AppCompatActivity() {
     private lateinit var adapter: DeviceInfoAdapter
 
     private val handler = Handler(Looper.getMainLooper())
-    private val updateIntervalMs = 1000L // 1 second
+    private val updateIntervalMs = 1000L // 1 second timer
 
-    // Broadcast: updates when system fires battery change (level, status, voltage, etc.)
-    private val batteryEventReceiver = object : BroadcastReceiver() {
+    // Receiver for slow updates (plugged in, health change, etc.)
+    private val batteryEventReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            // Refresh full set from sticky intent snapshot
-            updateBatteryInfo(fullRefresh = true)
+            updateSlowData()
         }
     }
 
-    // Timer: for smooth "real-time" current/power updates
-    private val realTimeRunnable = object : Runnable {
-        override fun run() {
-            updateBatteryInfo(fullRefresh = false) // only update the real-time rows
-            handler.postDelayed(this, updateIntervalMs)
-        }
+    // Runnable for fast updates (current, voltage, power)
+    private val realTimeRunnable: Runnable = Runnable {
+        updateFastData()
+        handler.postDelayed(realTimeRunnable, updateIntervalMs)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,71 +44,59 @@ class BatteryDetailActivity : AppCompatActivity() {
 
         recyclerView = findViewById(R.id.batteryDetailRecyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
-
+        
         batteryInfoHelper = BatteryInfoHelper(this)
-
         adapter = DeviceInfoAdapter(batteryDetailsList)
         recyclerView.adapter = adapter
-
-        // Seed the list with initial data
-        updateBatteryInfo(fullRefresh = true)
     }
 
     override fun onResume() {
         super.onResume()
+        // Register the receiver for slow updates
         registerReceiver(batteryEventReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        // Start the handler for fast updates
         handler.post(realTimeRunnable)
+        // Load initial data
+        updateSlowData()
     }
 
     override fun onPause() {
         super.onPause()
-        try {
-            unregisterReceiver(batteryEventReceiver)
-        } catch (_: IllegalArgumentException) { /* ignore if already unregistered */ }
+        // Stop both listeners to save battery
+        unregisterReceiver(batteryEventReceiver)
         handler.removeCallbacks(realTimeRunnable)
     }
 
-    private fun updateBatteryInfo(fullRefresh: Boolean) {
-        if (fullRefresh || batteryDetailsList.isEmpty()) {
-            // Rebuild the full list (includes Current/Power with the latest snapshot)
-            val newDetails = batteryInfoHelper.getBatteryDetailsList()
-            batteryDetailsList.clear()
-            batteryDetailsList.addAll(newDetails)
+    private fun updateSlowData() {
+        val slowDetails = batteryInfoHelper.getSlowUpdateDetails()
+        
+        // If the list is empty, populate it. Otherwise, update existing items.
+        if (batteryDetailsList.isEmpty()) {
+            batteryDetailsList.addAll(slowDetails)
+            // Add placeholders for fast data so the list has the right size
+            batteryDetailsList.add(DeviceInfo("Voltage", "..."))
+            batteryDetailsList.add(DeviceInfo("Current (Real-time)", "..."))
+            batteryDetailsList.add(DeviceInfo("Power (Real-time)", "..."))
             adapter.notifyDataSetChanged()
         } else {
-            // Only update the three real-time rows for a smooth 1-second refresh
-            val currentIdx = batteryDetailsList.indexOfFirst { it.label == "Current (Real-time)" }
-            val powerIdx   = batteryDetailsList.indexOfFirst { it.label == "Power (Real-time)" }
-            val voltageIdx = batteryDetailsList.indexOfFirst { it.label == "Voltage" }
-
-            val intent = batteryInfoHelper.getBatteryStatusIntent()
-
-            if (currentIdx != -1) {
-                val newCurrent = batteryInfoHelper.getCurrentNowMilliAmps()?.let { mA ->
-                    "$mA mA"
-                } ?: "N/A"
-                batteryDetailsList[currentIdx] = DeviceInfo("Current (Real-time)", newCurrent)
-                adapter.notifyItemChanged(currentIdx)
-            }
-
-            if (powerIdx != -1 && intent != null) {
-                val mA = batteryInfoHelper.getCurrentNowMilliAmps()
-                val mV = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1)
-                val newPower = if (mA != null && mV > 0) {
-                    val watts = (mA / 1000.0) * (mV / 1000.0)
-                    if (kotlin.math.abs(watts) < 0.005) "0.00 W" else String.format("%.2f W", watts)
-                } else {
-                    "N/A"
+            slowDetails.forEach { newItem ->
+                val index = batteryDetailsList.indexOfFirst { it.label == newItem.label }
+                if (index != -1) {
+                    batteryDetailsList[index] = newItem
+                    adapter.notifyItemChanged(index)
                 }
-                batteryDetailsList[powerIdx] = DeviceInfo("Power (Real-time)", newPower)
-                adapter.notifyItemChanged(powerIdx)
             }
-            
-            if (voltageIdx != -1 && intent != null) {
-                val mV = intent.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1)
-                val newVoltage = if (mV > 0) "$mV mV" else "N/A"
-                batteryDetailsList[voltageIdx] = DeviceInfo("Voltage", newVoltage)
-                adapter.notifyItemChanged(voltageIdx)
+        }
+    }
+
+    private fun updateFastData() {
+        val fastDetails = batteryInfoHelper.getFastUpdateDetails()
+
+        fastDetails.forEach { (label, value) ->
+            val index = batteryDetailsList.indexOfFirst { it.label == label }
+            if (index != -1) {
+                batteryDetailsList[index] = DeviceInfo(label, value)
+                adapter.notifyItemChanged(index)
             }
         }
     }
