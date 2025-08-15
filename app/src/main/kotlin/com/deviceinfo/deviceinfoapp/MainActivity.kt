@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
 
         // Create instances of all our helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
-        val batteryInfoHelper = BatteryInfoHelper(this) // The new diagnostic helper
+        val batteryInfoHelper = BatteryInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
         val sensorInfoHelper = SensorInfoHelper(this)
@@ -38,7 +38,7 @@ class MainActivity : AppCompatActivity() {
         deviceInfoList.add(DeviceInfo("Android Version", deviceInfoHelper.getAndroidVersion()))
         
         // --- Clickable Summary Items ---
-        deviceInfoList.add(DeviceInfo("Battery Diagnostics", batteryInfoHelper.getBatteryPercentageForDashboard()))
+        deviceInfoList.add(DeviceInfo("Battery Details", batteryInfoHelper.getBatteryPercentageForDashboard()))
         deviceInfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
         deviceInfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
         
@@ -48,7 +48,7 @@ class MainActivity : AppCompatActivity() {
             when (deviceInfo.label) {
                 "Sensor Details" -> startActivity(Intent(this, SensorListActivity::class.java))
                 "Application Details" -> startActivity(Intent(this, AppListActivity::class.java))
-                "Battery Diagnostics" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
+                "Battery Details" -> startActivity(Intent(this, BatteryDetailActivity::class.java))
             }
         }
         
