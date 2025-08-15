@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         val recyclerView: RecyclerView = findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Create instances of all our non-battery helpers
+        // Create instances of all non-battery helpers
         val deviceInfoHelper = DeviceInfoHelper(this)
         val cpuInfoHelper = CpuInfoHelper()
         val displayInfoHelper = DisplayInfoHelper(this)
@@ -31,16 +31,18 @@ class MainActivity : AppCompatActivity() {
         val deviceInfoList = mutableListOf<DeviceInfo>()
 
         // --- Populate the full dashboard list ---
-        deviceInfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
-        deviceInfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
-        deviceInfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
+        deviceinfoList.add(DeviceInfo("Total RAM", deviceInfoHelper.getTotalRam()))
+        deviceinfoList.add(DeviceInfo("Internal Storage Used", deviceInfoHelper.getInternalStorageUsagePercentage()))
+        deviceinfoList.add(DeviceInfo("CPU Model", cpuInfoHelper.getCpuModel()))
+        deviceinfoList.add(DeviceInfo("Root Status", systemInfoHelper.getRootStatus()))
+        deviceinfoList.add(DeviceInfo("Kernel Version", systemInfoHelper.getKernelVersion()))
         
         // --- Clickable Summary Items ---
-        deviceInfoList.add(DeviceInfo("Battery Details", getBatteryPercentageForDashboard()))
-        deviceInfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
-        deviceInfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
+        deviceinfoList.add(DeviceInfo("Battery Details", getBatteryPercentageForDashboard()))
+        deviceinfoList.add(DeviceInfo("Sensor Details", sensorInfoHelper.getSensorDetailsList().size.toString() + " Sensors"))
+        deviceinfoList.add(DeviceInfo("Application Details", appInfoHelper.getAllAppsDetails().size.toString() + " Apps"))
         
-        val adapter = DeviceInfoAdapter(deviceInfoList)
+        val adapter = DeviceInfoAdapter(deviceinfoList)
         
         adapter.onItemClick = { deviceInfo ->
             when (deviceInfo.label) {
